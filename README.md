@@ -1,0 +1,2 @@
+# Spiralator
+Spiralifies chips
