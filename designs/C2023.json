@@ -16,5 +16,27 @@
 		"Wcenter_um": 3,
 		"Wgap_um": 3
 	},
-	"is_etch": false
+	"is_etch": false,
+	"taper": {
+		"tpye": "linear"
+	},
+	"io": {
+		"curve_radius_um": 180,
+		"pads":{
+			"width_um": 345,
+			"height_um": 500,
+			"taper_width_um": 15,
+			"taper_height_um": 400,
+			"chip_edge_buffer_um": 100
+		},
+		"outer": {
+			"x_offset_um": 1850,
+			"y_offset_um": 250
+		},
+		"inner": {
+			"x_offset_um": 6150,
+			"y_offset_um": 500
+			
+		}
+	}
 }

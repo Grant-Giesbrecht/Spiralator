@@ -9,6 +9,10 @@ from colorama import Fore, Back, Style
 
 PI = 3.1415926535
 
+#TODO: For designs which are NOT inverted microstrip, you're going to
+#      want to add GSG pads (currently just signal b/c cannot route gnd
+#      to signal plane).
+
 #-----------------------------------------------------------
 # Parse arguments and initialize logger
 
@@ -100,7 +104,7 @@ class ChipDesign:
 		logging.info("Building chip")
 		
 		spiral_num = self.spiral['num_rotations']//2
-		spiral_b = self.spiral['spacing_um']/2/PI
+		spiral_b = self.spiral['spacing_um']/PI
 		spiral_rot_offset = PI # Rotate the entire spiral this many radians
 		center_circ_diameter = self.reversal['diameter_um']
 		circ_num_pts = self.reversal['num_points']//2
