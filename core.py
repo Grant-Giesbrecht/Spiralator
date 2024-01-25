@@ -58,12 +58,13 @@ class ChipDesign:
 		self.name = "void" # Name of design
 		self.chip_size_um = [] # Size of chip [x, y] 
 		self.spiral = {} # Spiral design
+		self.reversal = {} # Specs for how build reversal of spiral at center
 		self.tlin = {} # TLIN specifications
-		self.is_etch = False # If true, regions specify etch. Otherwise, regions specify metal/etc layer presence
+		self.is_etch = False # If true, regions specify etch. Otherwise, regions specify metal/etc layer presence. Equivalent to whether or not design is inverted.
 		
 		self.lib = gdstk.Library()
-		self.main_cell = self.lib.new_cell("NbTiN")
-		self.edges_cell = self.lib.new_cell("Edges")
+		self.main_cell = self.lib.new_cell("MAIN")
+		self.layers = {"NbTiN": 10, "Edges": 20}
 	
 	def read_conf(self, filename:str):
 		
@@ -101,8 +102,8 @@ class ChipDesign:
 		spiral_num = self.spiral['num_rotations']//2
 		spiral_b = self.spiral['spacing_um']/2/PI
 		spiral_rot_offset = PI # Rotate the entire spiral this many radians
-		center_circ_diameter = 85
-		circ_num_pts = 60
+		center_circ_diameter = self.reversal['diameter_um']
+		circ_num_pts = self.reversal['num_points']//2
 		
 		# Make path for 1-direction of spiral (Polar)
 		theta1 = np.linspace(spiral_rot_offset, spiral_rot_offset+2*PI*spiral_num, self.spiral["num_points"]//2)
@@ -137,16 +138,17 @@ class ChipDesign:
 		circ_list2 = [(x_, y_) for x_, y_ in zip(Xc2, Yc2)]
 		path_list = path_list1 + circ_list1 + circ_list2 + path_list2
 		
-		path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2)
+		# Create FlexPath object for full spiral + reversal
+		path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
 		
 		# Invert selection if color is etch
 		corner_bl = (-self.chip_size_um[0]//2, -self.chip_size_um[1]//2)
 		corner_tr = (self.chip_size_um[0]//2, self.chip_size_um[1]//2)
-		bulk = gdstk.rectangle(corner_bl, corner_tr)
+		bulk = gdstk.rectangle(corner_bl, corner_tr, layer=self.layers['Edges'])
 		
 		if self.is_etch:
 			logging.info(f"Inverting layers to calculate etch pattern.")
-			inv_paths = gdstk.boolean(bulk, path, "not")
+			inv_paths = gdstk.boolean(bulk, path, "not", layer=self.layers["NbTiN"])
 			logging.info(f"Adding etch layers (Inverted)")
 			for ip in inv_paths:
 				logging.debug(f"Added path from inverted path list.")
@@ -154,7 +156,7 @@ class ChipDesign:
 		else:
 			logging.info(f"Adding metal layers (Non-inverted)")
 			self.main_cell.add(path)
-			self.edges_cell.add(bulk)
+			self.main_cell.add(bulk)
 	
 	def write(self, filename:str):
 		

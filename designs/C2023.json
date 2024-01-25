@@ -6,10 +6,15 @@
 		"spacing_um": 100,
 		"num_points": 2500
 	},
+	"reversal": {
+		"mode": "circle",
+		"diameter_um": 85,
+		"num_points": 120
+	},
 	"tlin": {
 		"type": "CPW",
 		"Wcenter_um": 3,
 		"Wgap_um": 3
 	},
-	"is_etch": true
+	"is_etch": false
 }
