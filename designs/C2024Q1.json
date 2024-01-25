@@ -1,0 +1,11 @@
+{
+	"name": "C2024Q1",
+	"tlin_type": "microstrip",
+	"chip_X_mm": 10,
+	"chip_Y_mm": 5,
+	"spiral": {
+		"num_rotations": 37,
+		"spacing_um": 100,
+		""
+	}
+}

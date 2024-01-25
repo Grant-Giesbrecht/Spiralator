@@ -1,0 +1,15 @@
+{
+	"name": "C2023QX",
+	"chip_size_um": [10e3, 10e3],
+	"spiral": {
+		"num_rotations": 37,
+		"spacing_um": 100,
+		"num_points": 2500
+	},
+	"tlin": {
+		"type": "CPW",
+		"Wcenter_um": 3,
+		"Wgap_um": 3
+	},
+	"is_etch": true
+}
