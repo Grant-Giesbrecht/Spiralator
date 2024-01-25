@@ -17,11 +17,14 @@
 		"Wgap_um": 3
 	},
 	"is_etch": false,
-	"taper": {
-		"tpye": "linear"
-	},
 	"io": {
 		"curve_radius_um": 180,
+		"num_points_bend": 100,
+		"taper": {
+			"tpye": "linear",
+			"length_um": 3600,
+			"segment_length_um": 16
+		},
 		"pads":{
 			"width_um": 345,
 			"height_um": 500,
@@ -30,12 +33,12 @@
 			"chip_edge_buffer_um": 100
 		},
 		"outer": {
-			"x_offset_um": 1850,
-			"y_offset_um": 250
+			"x_pad_offset_um": 1850,
+			"y_line_offset_um": 250
 		},
 		"inner": {
-			"x_offset_um": 6150,
-			"y_offset_um": 500
+			"x_pad_offset_um": 6150,
+			"y_line_offset_um": 500
 			
 		}
 	}
