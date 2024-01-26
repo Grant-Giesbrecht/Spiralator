@@ -1,11 +1,45 @@
 {
 	"name": "C2024Q1",
-	"tlin_type": "microstrip",
-	"chip_X_mm": 10,
-	"chip_Y_mm": 5,
+	"chip_size_um": [10e3, 10e3],
 	"spiral": {
 		"num_rotations": 37,
 		"spacing_um": 100,
-		""
+		"num_points": 2500,
+		"tail_length_um": 10
+	},
+	"reversal": {
+		"mode": "circle",
+		"diameter_um": 85,
+		"num_points": 120
+	},
+	"tlin": {
+		"type": "CPW",
+		"Wcenter_um": 3,
+		"Wgap_um": 3
+	},
+	"is_etch": false,
+	"io": {
+		"curve_radius_um": 170,
+		"num_points_bend": 100,
+		"taper": {
+			"tpye": "linear",
+			"length_um": 3600,
+			"segment_length_um": 16
+		},
+		"pads":{
+			"width_um": 345,
+			"height_um": 500,
+			"taper_width_um": 15,
+			"taper_height_um": 400,
+			"chip_edge_buffer_um": 100
+		},
+		"outer": {
+			"x_pad_offset_um": 1850,
+			"y_line_offset_um": 250
+		},
+		"inner": {
+			"x_pad_offset_um": 6150,
+			"y_line_offset_um": 500
+		}
 	}
 }
