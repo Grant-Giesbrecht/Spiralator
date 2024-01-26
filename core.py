@@ -16,7 +16,7 @@ PI = 3.1415926535
 #-----------------------------------------------------------
 # Parse arguments and initialize logger
 
-LOG_LEVEL = logging.ERROR
+LOG_LEVEL = logging.INFO
 
 argv = sys.argv[1:]
 
@@ -65,8 +65,8 @@ def debug(msg:str):
 
 def info(msg:str):
 	
-	main_color = Fore.StdC
-	prime_color = Fore.MPrC
+	main_color = StdC
+	prime_color = MPrC
 	
 	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
 	rich_msg = rich_msg.replace(">", f"{prime_color}")
@@ -148,11 +148,11 @@ class ChipDesign:
 			with open(os.path.join(filename)) as f:
 				file_data = json.load(f)
 		except Exception as e:
-			logging.error(f"Failed to read file: {filename} ({e})")
+			error(f"Failed to read file: {filename} ({e})")
 			return False
 		
 		# Add logger statement
-		logging.info(f"Read file {filename}")
+		info(f"Read file {filename}")
 		
 		# Assign to local variables
 		for k in file_data.keys():
@@ -177,7 +177,7 @@ class ChipDesign:
 		# ---------------------------------------------------------------------
 		# Build spiral
 		
-		logging.info("Building chip")
+		info("Building chip")
 		
 		spiral_num = self.spiral['num_rotations']//2
 		spiral_b = self.spiral['spacing_um']/PI
@@ -240,14 +240,14 @@ class ChipDesign:
 		# Add objects to chip design
 		
 		if self.is_etch:
-			logging.info(f"Inverting layers to calculate etch pattern.")
+			info(f"Inverting layers to calculate etch pattern.")
 			inv_paths = gdstk.boolean(bulk, path, "not", layer=self.layers["NbTiN"])
-			logging.info(f"Adding etch layers (Inverted)")
+			info(f"Adding etch layers (Inverted)")
 			for ip in inv_paths:
 				debug(f"Added path from inverted path list.")
 				self.main_cell.add(ip)
 		else:
-			logging.info(f"Adding metal layers (Non-inverted)")
+			info(f"Adding metal layers (Non-inverted)")
 			self.main_cell.add(path)
 			self.main_cell.add(bulk)
 	
@@ -273,7 +273,7 @@ class ChipDesign:
 		
 		# Error checking
 		if self.io['curve_radius_um'] > location_rules['y_line_offset_um']:
-			logging.error("Failed to create IO component.")
+			error("Failed to create IO component.")
 			return False
 		
 		# Height of horizontal component of line
@@ -335,9 +335,9 @@ class ChipDesign:
 						dist += dX
 						
 						# Add to lists
-						point_list.append(current_point)
+						point_list.append((current_point[0], current_point[1]))
 						width_list.append(self.calc_taper_width(dist))
-					
+						
 					section = SEC_HORIZ
 				else:
 					
@@ -346,10 +346,10 @@ class ChipDesign:
 					dist += self.io['taper']['segment_length_um']
 					
 					# Add to lists
-					point_list.append(current_point)
+					point_list.append((current_point[0], current_point[1]))
 					width_list.append(self.calc_taper_width(dist))
 					
-					debug(f"Moving position to >{current_point}<")
+					debug(f"Moving position to >{current_point}< at width >{self.calc_taper_width(dist)}< um.")
 			
 			elif section == SEC_HORIZ:
 				
@@ -367,7 +367,7 @@ class ChipDesign:
 						dist += dX
 						
 						# Add to lists
-						point_list.append(current_point)
+						point_list.append((current_point[0], current_point[1]))
 						width_list.append(self.calc_taper_width(dist))
 					
 					section = SEC_VERT_SPIRAL
@@ -377,7 +377,7 @@ class ChipDesign:
 					dist += self.io['taper']['segment_length_um']
 					
 					# Add to lists
-					point_list.append(current_point)
+					point_list.append((current_point[0], current_point[1]))
 					width_list.append(self.calc_taper_width(dist))
 			
 			if section == SEC_VERT_SPIRAL:
@@ -396,7 +396,7 @@ class ChipDesign:
 						dist += dX
 						
 						# Add to lists
-						point_list.append(current_point)
+						point_list.append((current_point[0], current_point[1]))
 						width_list.append(self.tlin['Wcenter_um'])
 					
 					break
@@ -406,7 +406,7 @@ class ChipDesign:
 					dist += self.io['taper']['segment_length_um']
 					
 					# Add to lists
-					point_list.append(current_point)
+					point_list.append((current_point[0], current_point[1]))
 					width_list.append(self.calc_taper_width(dist))
 		
 		# Initialize IO structure with bond pad
@@ -415,7 +415,13 @@ class ChipDesign:
 		io_line.segment((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']+self.io['pads']['taper_height_um']-baseline_offset), self.io['pads']['taper_width_um'])
 		
 		# Add points and widths to curve
-		for pt,w in zip(point_list, width_list):
+		for idx,pt in enumerate(point_list): # width_list):
+			
+			w = width_list[idx]
+			
+			if idx < 10:
+				debug(f"Adding point >{pt}< at width >{w}<")
+			idx += 1
 			
 			io_line.segment(pt, w)
 		
@@ -429,6 +435,6 @@ class ChipDesign:
 	
 	def write(self, filename:str):
 		
-		logging.info(f"Writing GDS file {MPrC}'{filename}'{StdC}")
+		info(f"Writing GDS file {MPrC}'{filename}'{StdC}")
 		
 		self.lib.write_gds(filename)
