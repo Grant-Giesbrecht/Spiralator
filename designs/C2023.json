@@ -4,7 +4,8 @@
 	"spiral": {
 		"num_rotations": 37,
 		"spacing_um": 100,
-		"num_points": 2500
+		"num_points": 2500,
+		"tail_length_um": 10
 	},
 	"reversal": {
 		"mode": "circle",

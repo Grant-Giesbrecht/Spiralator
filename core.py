@@ -209,6 +209,7 @@ class ChipDesign:
 		Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
 		Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
 		
+		#TODO: Parameterize this
 		spiral_y_offset = 1000
 		
 		# Change format
@@ -218,7 +219,13 @@ class ChipDesign:
 		circ_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc1, Yc1)]
 		circ_list1.reverse()
 		circ_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc2, Yc2)]
-		path_list = path_list1 + circ_list1 + circ_list2 + path_list2
+		
+		# Add tails so there are no gaps when connecting to IO components
+		tail_1 = [(path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um'])]
+		tail_2 = [(path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um'])]
+		
+		# Union all components
+		path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
 		
 		# Create FlexPath object for full spiral + reversal
 		path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
@@ -298,12 +305,8 @@ class ChipDesign:
 		
 		# Get current point on line - initialize w/ end of bond pad
 		current_point = [location_rules['x_pad_offset_um']-just_offset, self.pad_height-baseline_offset]
-		
-		print(current_point)
-		
+				
 		# Create list of points and widths
-		# point_list = [current_point]
-		# width_list = [self.io['pads']['taper_width_um']]
 		point_list = []
 		width_list = []
 		
