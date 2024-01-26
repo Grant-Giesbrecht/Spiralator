@@ -74,6 +74,40 @@ def info(msg:str):
 	
 	logging.debug(rich_msg)
 
+def warning(msg:str):
+	
+	main_color = Fore.LIGHTRED_EX
+	prime_color = Fore.WHITE
+	
+	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
+	rich_msg = rich_msg.replace(">", f"{prime_color}")
+	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	logging.debug(rich_msg)
+	
+def error(msg:str):
+	
+	main_color = Fore.RED
+	prime_color = Fore.WHITE
+	
+	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
+	rich_msg = rich_msg.replace(">", f"{prime_color}")
+	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	logging.debug(rich_msg)
+
+def critical(msg:str):
+	
+	main_color = Fore.RED
+	prime_color = Fore.WHITE
+	
+	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
+	rich_msg = rich_msg.replace(">", f"{prime_color}")
+	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	logging.debug(rich_msg)
+
+
 # Logger initialized
 #-----------------------------------------------------------
 
