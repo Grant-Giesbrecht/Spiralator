@@ -132,6 +132,8 @@ class ChipDesign:
 		self.corner_bl = (-1, -1)
 		self.corner_tr = (-1, -1)
 		self.pad_height = -1
+		
+		self.surpress_warning_ttype = False 
 	
 	def update(self):
 		""" Update automatically calcualted parameters """
@@ -259,12 +261,30 @@ class ChipDesign:
 			self.main_cell.add(bulk)
 	
 	def calc_taper_width(self, z:float):
-		""" Calculates the width of the line given the specified taper. """
+		""" Calculates the width of the line given the specified taper. 
+		
+		Type options: (Case insensitive)
+			NONE: No taper, immediately jumps to width of spiral.
+			LINEAR: Linearly reduces width
+		
+		"""
 		
 		#TODO: Implement this!
 		
-		return self.tlin['Wcenter_um']
-		
+		if self.io['taper']['type'].upper() == "NONE":
+			return self.tlin['Wcenter_um']
+		elif self.io['taper']['type'].upper() == "LINEAR":
+			slope = (self.io['pads']['taper_width_um'] - self.tlin['Wcenter_um'])/self.io['taper']['length_um']
+			if z >= self.io['taper']['length_um']:
+				return self.tlin['Wcenter_um']
+			return self.io['pads']['taper_width_um'] - slope*z
+		else:
+			ttype = self.io['taper']['type'].upper()
+			if not self.surpress_warning_ttype:
+				warning(f"Failed to recognize taper type >{ttype}<.")
+				self.surpress_warning_ttype = True
+				
+			return self.tlin['Wcenter_um']
 	
 	def build_io_component(self, start_point, location_rules:dict):
 		""" Builds the meandered lines and bond pad for one conductor"""

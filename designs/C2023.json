@@ -22,7 +22,7 @@
 		"curve_radius_um": 170,
 		"num_points_bend": 100,
 		"taper": {
-			"tpye": "linear",
+			"type": "linear",
 			"length_um": 3600,
 			"segment_length_um": 16
 		},
