@@ -44,12 +44,35 @@ for opt, aarg in opts:
 	# ...
 
 tabchar = "    "
-PrC = Fore.YELLOW
-MPrC = Fore.LIGHTCYAN_EX
-StdC = Fore.LIGHTBLUE_EX
-quiet_color = Fore.WHITE
+PrC = Fore.YELLOW # Prime color (in formatting)
+MPrC = Fore.LIGHTCYAN_EX # Message prime color 
+StdC = Fore.LIGHTBLUE_EX # Main color for messages
+quiet_color = Fore.WHITE # Not used as of now
+
 # logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(message)s', level=logging.INFO)
 logging.basicConfig(format=f'::{PrC}%(levelname)s{Style.RESET_ALL}::{StdC} %(message)s{quiet_color} (Received at %(asctime)s){Style.RESET_ALL}', level=LOG_LEVEL)
+
+def debug(msg:str):
+	
+	main_color = Fore.LIGHTBLACK_EX
+	prime_color = Fore.WHITE
+	
+	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
+	rich_msg = rich_msg.replace(">", f"{prime_color}")
+	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	logging.debug(rich_msg)
+
+def info(msg:str):
+	
+	main_color = Fore.StdC
+	prime_color = Fore.MPrC
+	
+	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
+	rich_msg = rich_msg.replace(">", f"{prime_color}")
+	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	logging.debug(rich_msg)
 
 # Logger initialized
 #-----------------------------------------------------------
@@ -101,7 +124,7 @@ class ChipDesign:
 		for k in file_data.keys():
 			setattr(self, k, file_data[k])
 			fdk = file_data[k]
-			logging.debug(f"Writing value {MPrC}{fdk}{StdC} to variable <{MPrC}{k}{StdC}> {filename}")
+			debug(f"Writing value {MPrC}{fdk}{StdC} to variable <{MPrC}{k}{StdC}> {filename}")
 		
 		self.update()
 		
@@ -175,6 +198,9 @@ class ChipDesign:
 		# Meander outer line: starts at (X2 and Y2)
 		self.build_io_component(path_list2[-1], self.io['outer'])
 		
+		# Meander inner line
+		self.build_io_component(path_list1[0], self.io['inner'])
+		
 		
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
@@ -184,7 +210,7 @@ class ChipDesign:
 			inv_paths = gdstk.boolean(bulk, path, "not", layer=self.layers["NbTiN"])
 			logging.info(f"Adding etch layers (Inverted)")
 			for ip in inv_paths:
-				logging.debug(f"Added path from inverted path list.")
+				debug(f"Added path from inverted path list.")
 				self.main_cell.add(ip)
 		else:
 			logging.info(f"Adding metal layers (Non-inverted)")
@@ -225,23 +251,27 @@ class ChipDesign:
 		
 		# Pre-calculate bend coordinates - Pad side
 		theta_bp = np.linspace(0, PI/2, self.io['num_points_bend'])
-		Xbp = self.io['num_points_bend']*np.cos(theta_bp)
-		Ybp = self.io['num_points_bend']*np.sin(theta_bp)
+		Xbp = self.io['curve_radius_um']*np.cos(theta_bp)
+		Ybp = self.io['curve_radius_um']*np.sin(theta_bp)
 		bend_pad = [[x_-just_offset+location_rules['x_pad_offset_um']-self.io['curve_radius_um'], y_-baseline_offset+line_height-self.io['curve_radius_um']] for x_, y_ in zip(Xbp, Ybp)] # List of points for pad side bend
 		
 		# Pre-calculate bend coordinates - Spiral side
 		theta_bp = np.linspace(PI, 3*PI/2, self.io['num_points_bend'])
-		Xbp = self.io['num_points_bend']*np.cos(theta_bp)
-		Ybp = self.io['num_points_bend']*np.sin(theta_bp)
-		bend_spiral = [[x_+start_point[0]+self.io['curve_radius_um'], y_-baseline_offset+line_height] for x_, y_ in zip(Xbp, Ybp)]
+		Xbp = self.io['curve_radius_um']*np.cos(theta_bp)
+		Ybp = self.io['curve_radius_um']*np.sin(theta_bp)
+		bend_spiral = [[x_+start_point[0]+self.io['curve_radius_um'], y_-baseline_offset+line_height+self.io['curve_radius_um']] for x_, y_ in zip(Xbp, Ybp)]
 		bend_spiral.reverse() # List of points for spiral side bend
 		
-		# Get current point on line
+		# Get current point on line - initialize w/ end of bond pad
 		current_point = [location_rules['x_pad_offset_um']-just_offset, self.pad_height-baseline_offset]
 		
+		print(current_point)
+		
 		# Create list of points and widths
-		point_list = [current_point]
-		width_list = [self.io['pads']['taper_width_um']]
+		# point_list = [current_point]
+		# width_list = [self.io['pads']['taper_width_um']]
+		point_list = []
+		width_list = []
 		
 		# Record which section of line algorithm is on
 		section = SEC_VERT_PAD
@@ -257,6 +287,8 @@ class ChipDesign:
 				
 				# Check when need to add first bend
 				if current_point[1]+self.io['taper']['segment_length_um'] >= y_bend_pad_trigger:
+					
+					debug("Triggering first bend")
 					
 					# Loop over each point in bend, add all
 					for bp in bend_pad:
@@ -274,6 +306,7 @@ class ChipDesign:
 					
 					section = SEC_HORIZ
 				else:
+					
 					# Update position
 					current_point[1] += self.io['taper']['segment_length_um']
 					dist += self.io['taper']['segment_length_um']
@@ -281,11 +314,13 @@ class ChipDesign:
 					# Add to lists
 					point_list.append(current_point)
 					width_list.append(self.calc_taper_width(dist))
+					
+					debug(f"Moving position to >{current_point}<")
 			
 			elif section == SEC_HORIZ:
 				
 				# Check when need to add first bend
-				if current_point[0]+self.io['taper']['segment_length_um'] <= x_bend_spiral_trigger:
+				if current_point[0]-self.io['taper']['segment_length_um'] <= x_bend_spiral_trigger:
 					
 					# Loop over each point in bend, add all
 					for bp in bend_spiral:
