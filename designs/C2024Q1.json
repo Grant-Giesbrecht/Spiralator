@@ -1,6 +1,7 @@
 {
 	"name": "C2024Q1",
 	"chip_size_um": [10e3, 10e3],
+	"chip_edge_buffer_um": 275,
 	"spiral": {
 		"num_rotations": 37,
 		"spacing_um": 100,
@@ -34,7 +35,7 @@
 			"chip_edge_buffer_um": 100
 		},
 		"outer": {
-			"x_pad_offset_um": 1850,
+			"x_pad_offset_um": 6000,
 			"y_line_offset_um": 250
 		},
 		"inner": {

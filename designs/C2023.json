@@ -1,6 +1,7 @@
 {
 	"name": "C2023QX",
 	"chip_size_um": [10e3, 10e3],
+	"chip_edge_buffer_um": 275,
 	"spiral": {
 		"num_rotations": 37,
 		"spacing_um": 100,
