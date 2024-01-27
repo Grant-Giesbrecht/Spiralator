@@ -7,7 +7,8 @@
 		"num_rotations": 37,
 		"spacing_um": 100,
 		"num_points": 2500,
-		"tail_length_um": 10
+		"tail_length_um": 10,
+		"horiz_stretch_um": 0
 	},
 	"reversal": {
 		"mode": "circle",

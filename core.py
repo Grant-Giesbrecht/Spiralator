@@ -17,12 +17,14 @@ PI = 3.1415926535
 #-----------------------------------------------------------
 # Parse arguments and initialize logger
 
+DUMMY_MODE = False
+
 LOG_LEVEL = logging.INFO
 
 argv = sys.argv[1:]
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:], "h", ["help", "debug", "info", "warning", "error", "critical"])
+	opts, args = getopt.getopt(sys.argv[1:], "h", ["help", "debug", "info", "warning", "error", "critical", "dummy"])
 except getopt.GetoptError as err:
 	print("--help for help")
 	sys.exit(2)
@@ -40,6 +42,8 @@ for opt, aarg in opts:
 		LOG_LEVEL = logging.ERROR
 	elif opt == "--critical":
 		LOG_LEVEL = logging.CRITICAL
+	elif opt == "--dummy":
+		DUMMY_MODE = True
 	else:
 		assert False, "unhandled option"
 	# ...
@@ -235,7 +239,7 @@ class ChipDesign:
 		
 		if self.io['outer']['x_pad_offset_um'] + self.io['pads']['width_um'] + 100 >= self.io['inner']['x_pad_offset_um']:
 			warning("Inner and outer bond pads are detected to be close. Please verify this is desired.")
-			
+		
 		
 		spiral_num = self.spiral['num_rotations']//2
 		spiral_b = self.spiral['spacing_um']/PI
@@ -251,21 +255,11 @@ class ChipDesign:
 		theta2 = np.linspace(spiral_rot_offset, spiral_rot_offset+2*PI*(spiral_num+0.5), round(self.spiral["num_points"]/2*(spiral_num+0.5)/spiral_num))
 		R2 = (theta2-spiral_rot_offset)*spiral_b + center_circ_diameter
 		
-		# Create center circles
-		theta_circ1 = np.linspace(0, PI, circ_num_pts)
-		theta_circ2 = np.linspace(PI, 2*PI, circ_num_pts)
-		
 		# Convert spirals to cartesian
 		X1 = R1*np.cos(theta1)
 		Y1 = R1*np.sin(theta1)
 		X2 = -1*R2*np.cos(theta2)
 		Y2 = -1*R2*np.sin(theta2)
-		
-		# Convert circles to cartesian
-		Xc1 = center_circ_diameter/2*np.cos(theta_circ1)-center_circ_diameter/2
-		Yc1 = center_circ_diameter/2*np.sin(theta_circ1)
-		Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
-		Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
 		
 		#TODO: Calculate spiral length
 		
@@ -300,25 +294,118 @@ class ChipDesign:
 		
 		#TODO: Check X placement
 		
-		# spiral_y_offset = 1000
-		
 		#
 		#### End choose spiral position --------------------
 		
-		# Change format
-		path_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X1, Y1)]
-		path_list1.reverse()
-		path_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X2, Y2)]
-		circ_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc1, Yc1)]
-		circ_list1.reverse()
-		circ_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc2, Yc2)]
+		if self.reversal['mode'].upper() == "CIRCLE":
 		
-		# Add tails so there are no gaps when connecting to IO components
-		tail_1 = [(path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um'])]
-		tail_2 = [(path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um'])]
+			# Create center circles
+			theta_circ1 = np.linspace(0, PI, circ_num_pts)
+			theta_circ2 = np.linspace(PI, 2*PI, circ_num_pts)
+			
+			# Convert circles to cartesian
+			Xc1 = center_circ_diameter/2*np.cos(theta_circ1)-center_circ_diameter/2
+			Yc1 = center_circ_diameter/2*np.sin(theta_circ1)
+			Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
+			Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
+			
+			# Change format
+			path_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X1, Y1)]
+			path_list1.reverse()
+			path_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X2, Y2)]
+			circ_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc1, Yc1)]
+			circ_list1.reverse()
+			circ_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc2, Yc2)]
+			
+			# Add tails so there are no gaps when connecting to IO components
+			tail_1 = [(path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um'])]
+			tail_2 = [(path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um'])]
+			
+			# Union all components
+			path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
 		
-		# Union all components
-		path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
+		elif self.reversal['mode'].upper() == "CIRCLE_SMOOTH":
+			
+			# Change format
+			path_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X1, Y1)]
+			path_list1.reverse()
+			path_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X2, Y2)]
+			
+			
+			# Add tails so there are no gaps when connecting to IO components
+			tail_1 = [(path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um'])]
+			tail_2 = [(path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um'])]
+			
+			# On inner most spirals, find where tangent is vertical. Stop spiral and extend ---------
+			# vertically so it matches smoothly with the circle reversal caps:
+			
+			# Find start point for path1
+			last_x1 = None
+			idx_x1 = None
+			for idx, coord in enumerate(reversed(path_list1)):
+				
+				# Initilize
+				if idx == 0:
+					last_x1 = coord[0]
+					continue
+				
+				# Find where x-direction reverses
+				if coord[0] >= last_x1:
+					idx_x1 = idx
+					break
+				else:
+					last_x1 = coord[0]
+				
+			
+			# Modify spiral path
+			final_y = path_list1[-1][1]
+			path_list1 = path_list1[0:-idx_x1]
+			path_list1.append([last_x1, final_y])
+			
+			# Find start point for path1
+			last_x2 = None
+			idx_x2 = None
+			for idx, coord in enumerate(path_list2):
+				
+				# Initilize
+				if idx == 0:
+					last_x2 = coord[0]
+					continue
+				
+				# Find where x-direction reverses
+				if coord[0] <= last_x2:
+					idx_x2 = idx
+					break
+				else:
+					last_x2 = coord[0]
+				
+			
+			# Modify spiral path
+			final_y = path_list2[0][1]
+			path_list2 = path_list2[idx_x2:]
+			path_list2.insert(0, [last_x2, final_y])
+			
+			# Modify diameter to match spirals
+			center_circ_diameter = abs(last_x1)
+			
+			# End trim spiral inners --------------------
+			
+			# Create center circles
+			theta_circ1 = np.linspace(0, PI, circ_num_pts)
+			theta_circ2 = np.linspace(PI, 2*PI, circ_num_pts)
+			
+			# Convert circles to cartesian
+			Xc1 = center_circ_diameter/2*np.cos(theta_circ1)-center_circ_diameter/2
+			Yc1 = center_circ_diameter/2*np.sin(theta_circ1)
+			Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
+			Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
+					
+			circ_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc1, Yc1)]
+			circ_list1.reverse()
+			circ_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc2, Yc2)]
+			
+			# Union all components
+			path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
 		
 		# Create FlexPath object for full spiral + reversal
 		path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
@@ -381,7 +468,7 @@ class ChipDesign:
 	def build_io_component(self, start_point, location_rules:dict):
 		""" Builds the meandered lines and bond pad for one conductor"""
 		
-		logging.debug("Adding taper and bond pad.")
+		debug("Adding taper and bond pad.")
 		
 		# Get offset parameters
 		baseline_offset = self.chip_size_um[1]//2 # Offset to translate (y = 0) to actual bottom of chip
@@ -552,6 +639,10 @@ class ChipDesign:
 	
 	def write(self, filename:str):
 		
-		info(f"Writing GDS file {MPrC}'{filename}'{StdC}")
+		if DUMMY_MODE:
+			info(f"Skipping write GDS file >DUMMY_MODE<=>TRUE<.")
+		else:
+			self.lib.write_gds(filename)
+			info(f"Wrote GDS file {MPrC}'{filename}'{StdC}")
 		
-		self.lib.write_gds(filename)
+		

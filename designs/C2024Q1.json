@@ -1,16 +1,19 @@
 {
-	"name": "C2024Q1",
-	"chip_size_um": [10e3, 10e3],
+	"name": "C2023QX",
+	"chip_size_um": [5e3, 10e3],
 	"chip_edge_buffer_um": 275,
+	"spiral_io_buffer_um": 285,
 	"spiral": {
-		"num_rotations": 37,
-		"spacing_um": 100,
+		"num_rotations": 25,
+		"spacing_um": 75,
 		"num_points": 2500,
-		"tail_length_um": 10
+		"tail_length_um": 10,
+		"horiz_stretch_um": 200,
+		"vert_stretch_um": 0
 	},
 	"reversal": {
-		"mode": "circle",
-		"diameter_um": 85,
+		"mode": "circle_smooth",
+		"diameter_um": 200,
 		"num_points": 120
 	},
 	"tlin": {
@@ -23,8 +26,8 @@
 		"curve_radius_um": 170,
 		"num_points_bend": 100,
 		"taper": {
-			"tpye": "linear",
-			"length_um": 3600,
+			"type": "linear",
+			"length_um": 3000,
 			"segment_length_um": 16
 		},
 		"pads":{
@@ -35,11 +38,11 @@
 			"chip_edge_buffer_um": 100
 		},
 		"outer": {
-			"x_pad_offset_um": 6000,
+			"x_pad_offset_um": 1500,
 			"y_line_offset_um": 250
 		},
 		"inner": {
-			"x_pad_offset_um": 6150,
+			"x_pad_offset_um": 3500,
 			"y_line_offset_um": 500
 		}
 	}

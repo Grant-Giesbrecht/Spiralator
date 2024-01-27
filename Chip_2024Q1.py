@@ -2,7 +2,7 @@ from core import *
 
 chip = ChipDesign()
 
-chip.read_conf(os.path.join("designs", "C2023.json"))
+chip.read_conf(os.path.join("designs", "C2024Q1.json"))
 
 chip.build()
 

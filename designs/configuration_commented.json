@@ -7,11 +7,12 @@
 		"num_rotations": 37, // Number of rotations, as defined by crossings along one radius
 		"spacing_um": 100, // Center-to-center spacing between spirals
 		"num_points": 2500, // Number of points to include in the spiral
-		"tail_length_um": 10 // Length of tail after spiral end (used to prevent gap between spiral and IO structrues)
+		"tail_length_um": 10, // Length of tail after spiral end (used to prevent gap between spiral and IO structrues)
+		"horiz_stretch_um": 200 // Amount of horizontal length to inject at spiral tops to stretch out spiral over a rectangular wafer
 	},
 	"reversal": { // How to build spiral reversal
-		"mode": "circle", // Only option is circle
-		"diameter_um": 85, // Diameter of the circles 
+		"mode": "circle", // circle or circle_smooth. 
+		"diameter_um": 85, // Diameter of the circles. Will be expanded a bit with circle smooth to improve mmatch
 		"num_points": 120 // NUmber of points per circle
 	},
 	"tlin": { // Transmission line parameters
