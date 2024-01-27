@@ -52,6 +52,10 @@ quiet_color = Fore.WHITE # Not used as of now
 # logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(message)s', level=logging.INFO)
 logging.basicConfig(format=f'::{PrC}%(levelname)s{Style.RESET_ALL}::{StdC} %(message)s{quiet_color} (Received at %(asctime)s){Style.RESET_ALL}', level=LOG_LEVEL)
 
+def rd(x:float, precision:int=2):
+	
+	return f"{round(x*(10**precision))/(10**precision)}"
+
 def debug(msg:str):
 	
 	main_color = Fore.LIGHTBLACK_EX
@@ -72,7 +76,7 @@ def info(msg:str):
 	rich_msg = rich_msg.replace(">", f"{prime_color}")
 	rich_msg = rich_msg.replace("<", f"{main_color}")
 	
-	logging.debug(rich_msg)
+	logging.info(rich_msg)
 
 def warning(msg:str):
 	
@@ -83,7 +87,7 @@ def warning(msg:str):
 	rich_msg = rich_msg.replace(">", f"{prime_color}")
 	rich_msg = rich_msg.replace("<", f"{main_color}")
 	
-	logging.debug(rich_msg)
+	logging.warning(rich_msg)
 	
 def error(msg:str):
 	
@@ -94,7 +98,7 @@ def error(msg:str):
 	rich_msg = rich_msg.replace(">", f"{prime_color}")
 	rich_msg = rich_msg.replace("<", f"{main_color}")
 	
-	logging.debug(rich_msg)
+	logging.error(rich_msg)
 
 def critical(msg:str):
 	
@@ -105,7 +109,7 @@ def critical(msg:str):
 	rich_msg = rich_msg.replace(">", f"{prime_color}")
 	rich_msg = rich_msg.replace("<", f"{main_color}")
 	
-	logging.debug(rich_msg)
+	logging.critical(rich_msg)
 
 
 # Logger initialized
@@ -289,6 +293,8 @@ class ChipDesign:
 	def build_io_component(self, start_point, location_rules:dict):
 		""" Builds the meandered lines and bond pad for one conductor"""
 		
+		logging.debug("Adding taper and bond pad.")
+		
 		# Get offset parameters
 		baseline_offset = self.chip_size_um[1]//2 # Offset to translate (y = 0) to actual bottom of chip
 		just_offset = self.chip_size_um[0]//2 # Offset to translate (x = 0) to actual left side of chip
@@ -372,7 +378,7 @@ class ChipDesign:
 					point_list.append((current_point[0], current_point[1]))
 					width_list.append(self.calc_taper_width(dist))
 					
-					debug(f"Moving position to >{current_point}< at width >{self.calc_taper_width(dist)}< um.")
+					# debug(f"Moving position to >{current_point}< at width >{self.calc_taper_width(dist)}< um.")
 			
 			elif section == SEC_HORIZ:
 				
@@ -442,16 +448,16 @@ class ChipDesign:
 			
 			w = width_list[idx]
 			
-			if idx < 10:
-				debug(f"Adding point >{pt}< at width >{w}<")
-			idx += 1
-			
 			io_line.segment(pt, w)
 		
 		# Add objects to chip design
 		self.main_cell.add(io_line)
 		
+		taper_length = self.io['taper']['length_um']
+		info(f"Total meandered line length: >{rd(dist)}< um, Taper length: >{rd(taper_length)}<.")
 		
+		if dist < taper_length:
+			warning("Meandered line length is less than taper length! Sharp edge present.")
 		
 		# (self.corner_bl[0]+self.io['outer']['x_offset_um'], self.corner_bl[1]+self.io['outer']['y_offset_um'])
 		
