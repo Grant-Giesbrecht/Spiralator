@@ -6,6 +6,7 @@ import logging
 import getopt
 import sys
 from colorama import Fore, Back, Style
+import re
 
 PI = 3.1415926535
 
@@ -57,13 +58,25 @@ def rd(x:float, precision:int=2):
 	return f"{round(x*(10**precision))/(10**precision)}"
 
 def debug(msg:str):
+	""" Logs a message. Applys rules:
+		> changes color to PRIME
+		< retursn color to standard
+		\\> Type > without color adjustment
+		\\< Type < without color adjustment
+	"""
 	
 	main_color = Fore.LIGHTBLACK_EX
 	prime_color = Fore.WHITE
 	
 	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
-	rich_msg = rich_msg.replace(">", f"{prime_color}")
-	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	# Replace > < that are not escaped with color
+	rich_msg = re.sub("(?<!\\\\)>", f"{prime_color}", rich_msg)
+	rich_msg = re.sub("(?<!\\\\)<", f"{main_color}", rich_msg)
+	
+	# Remove escape characters
+	rich_msg = rich_msg.replace("\\>", f">")
+	rich_msg = rich_msg.replace("\\<", f"<")
 	
 	logging.debug(rich_msg)
 
@@ -73,8 +86,14 @@ def info(msg:str):
 	prime_color = MPrC
 	
 	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
-	rich_msg = rich_msg.replace(">", f"{prime_color}")
-	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	# Replace > < that are not escaped with color
+	rich_msg = re.sub("(?<!\\\\)>", f"{prime_color}", rich_msg)
+	rich_msg = re.sub("(?<!\\\\)<", f"{main_color}", rich_msg)
+	
+	# Remove escape characters
+	rich_msg = rich_msg.replace("\\>", f">")
+	rich_msg = rich_msg.replace("\\<", f"<")
 	
 	logging.info(rich_msg)
 
@@ -84,8 +103,14 @@ def warning(msg:str):
 	prime_color = Fore.WHITE
 	
 	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
-	rich_msg = rich_msg.replace(">", f"{prime_color}")
-	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	# Replace > < that are not escaped with color
+	rich_msg = re.sub("(?<!\\\\)>", f"{prime_color}", rich_msg)
+	rich_msg = re.sub("(?<!\\\\)<", f"{main_color}", rich_msg)
+	
+	# Remove escape characters
+	rich_msg = rich_msg.replace("\\>", f">")
+	rich_msg = rich_msg.replace("\\<", f"<")
 	
 	logging.warning(rich_msg)
 	
@@ -95,8 +120,14 @@ def error(msg:str):
 	prime_color = Fore.WHITE
 	
 	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
-	rich_msg = rich_msg.replace(">", f"{prime_color}")
-	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	# Replace > < that are not escaped with color
+	rich_msg = re.sub("(?<!\\\\)>", f"{prime_color}", rich_msg)
+	rich_msg = re.sub("(?<!\\\\)<", f"{main_color}", rich_msg)
+	
+	# Remove escape characters
+	rich_msg = rich_msg.replace("\\>", f">")
+	rich_msg = rich_msg.replace("\\<", f"<")
 	
 	logging.error(rich_msg)
 
@@ -106,8 +137,14 @@ def critical(msg:str):
 	prime_color = Fore.WHITE
 	
 	rich_msg = f"{main_color}{msg}{Style.RESET_ALL}"
-	rich_msg = rich_msg.replace(">", f"{prime_color}")
-	rich_msg = rich_msg.replace("<", f"{main_color}")
+	
+	# Replace > < that are not escaped with color
+	rich_msg = re.sub("(?<!\\\\)>", f"{prime_color}", rich_msg)
+	rich_msg = re.sub("(?<!\\\\)<", f"{main_color}", rich_msg)
+	
+	# Remove escape characters
+	rich_msg = rich_msg.replace("\\>", f">")
+	rich_msg = rich_msg.replace("\\<", f"<")
 	
 	logging.critical(rich_msg)
 
@@ -121,7 +158,9 @@ class ChipDesign:
 		
 		# Design specifications
 		self.name = "void" # Name of design
-		self.chip_size_um = [] # Size of chip [x, y] 
+		self.chip_size_um = [] # Size of chip [x, y]
+		self.chip_edge_buffer_um = None
+		self.spiral_io_buffer_um = None
 		self.spiral = {} # Spiral design
 		self.reversal = {} # Specs for how build reversal of spiral at center
 		self.tlin = {} # TLIN specifications
@@ -185,6 +224,19 @@ class ChipDesign:
 		
 		info("Building chip")
 		
+		# Basic error checking
+		if self.io['outer']['y_line_offset_um'] >= self.io['inner']['y_line_offset_um']:
+			error("Inner IO structure must have higher y-offset than outer. Cannot build chip.")
+			return False
+		
+		if self.io['outer']['y_line_offset_um']+self.io['pads']['taper_width_um']+20 >= self.io['inner']['y_line_offset_um']:
+			warning("Inner and outer IO structures are detected to be close. Please verify this is desired.")
+			
+		
+		if self.io['outer']['x_pad_offset_um'] + self.io['pads']['width_um'] + 100 >= self.io['inner']['x_pad_offset_um']:
+			warning("Inner and outer bond pads are detected to be close. Please verify this is desired.")
+			
+		
 		spiral_num = self.spiral['num_rotations']//2
 		spiral_b = self.spiral['spacing_um']/PI
 		spiral_rot_offset = PI # Rotate the entire spiral this many radians
@@ -215,8 +267,43 @@ class ChipDesign:
 		Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
 		Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
 		
-		#TODO: Parameterize this
-		spiral_y_offset = 1000
+		#TODO: Calculate spiral length
+		
+		#TODO: Add straight shots for oval spiral
+		
+		### Select spiral Y-offset/ Check fits on wafer ------------
+		#
+		
+		# Get X and Y bounds
+		allYs = list(Y1)+list(Y2)
+		allXs = list(X1)+list(X2)
+		y_max = np.max(allYs)
+		y_min = np.min(allYs)
+		x_max = np.max(allXs)
+		x_min = np.min(allXs)
+		dY = y_max - y_min
+		dX = x_max - x_min
+		upper_bound = self.chip_size_um[1]/2
+		lower_bound = -self.chip_size_um[1]/2 + self.io['inner']['y_line_offset_um'] + self.pad_height
+		
+		# Check fit
+		allowed_size = upper_bound - lower_bound - self.spiral_io_buffer_um - self.chip_edge_buffer_um
+		if dY > allowed_size:
+			error(f"Cannot fit spiral in Y-dimension. Spiral height >{dY} um< \\> allowed region >{allowed_size} um<.")
+			return False
+		
+		# Get height from bottom
+		spiral_y_offset = lower_bound + self.spiral_io_buffer_um + (allowed_size - dY)/2 + abs(y_min)
+		debug(f"Selected spiral Y offset of >{spiral_y_offset} um<.")
+		debug(f"Spiral lower margin: >{self.spiral_io_buffer_um+(allowed_size-dY)/2} um<.")
+		debug(f"Spiral upper margin: >{self.chip_edge_buffer_um+(allowed_size-dY)/2} um<.")
+		
+		#TODO: Check X placement
+		
+		# spiral_y_offset = 1000
+		
+		#
+		#### End choose spiral position --------------------
 		
 		# Change format
 		path_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X1, Y1)]
@@ -248,7 +335,6 @@ class ChipDesign:
 		# Meander inner line
 		self.build_io_component(path_list1[0], self.io['inner'])
 		
-		
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
 		
@@ -263,6 +349,8 @@ class ChipDesign:
 			info(f"Adding metal layers (Non-inverted)")
 			self.main_cell.add(path)
 			self.main_cell.add(bulk)
+		
+		return True
 	
 	def calc_taper_width(self, z:float):
 		""" Calculates the width of the line given the specified taper. 
