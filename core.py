@@ -411,14 +411,19 @@ class ChipDesign:
 		#### Extend spiral with straight regions as specified --------------------
 		#
 		
-		# Shift everything down by half
+		# Shift everything down and to the left by half
 		for pl in path_list:
+			pl[0] -= self.spiral['horiz_stretch_um']//2
 			pl[1] -= self.spiral['vert_stretch_um']//2
+		
+		#///////////// Perform vertical stretching //////////////////
 		
 		# Initialize, find when dX changes sign
 		last_sdX = 0
 		
 		idx_reversal_pt = len(tail_1) + len(path_list1) + len(circ_list1)
+		idx_horiz_lock = len(tail_1) + len(path_list1)
+		idx_horiz_unlock = len(tail_1) + len(path_list1) + len(circ_list1) + len(circ_list2)
 		
 		# Scan over all points
 		idx = 0
@@ -442,10 +447,10 @@ class ChipDesign:
 			if (last_sdX != sdX) or (idx == idx_reversal_pt):
 				# Change occured
 				
-				if idx == idx_reversal_pt:
-					print("Triggering: Found middle")
-				else:
-					print(f"Triggering: idx = {idx}, rev pt = {idx_reversal_pt}")
+				# if idx == idx_reversal_pt:
+				# 	print("Triggering: Found middle")
+				# else:
+				# 	print(f"Triggering: idx = {idx}, rev pt = {idx_reversal_pt}")
 				
 				# Duplicate last point
 				path_list.insert(idx, [path_list[idx-1][0], path_list[idx-1][1]])
@@ -461,7 +466,7 @@ class ChipDesign:
 						return False
 				sign_val = dY/abs(dY)
 				
-				print(f"dY sign = {sign_val}, |dY| = {abs(dY)}")
+				# print(f"dY sign = {sign_val}, |dY| = {abs(dY)}")
 				
 				# Shift all remaining points up/down
 				for si in range(idx, len(path_list)):
@@ -472,16 +477,92 @@ class ChipDesign:
 				# Increment index to account for added point
 				idx += 1
 				idx_reversal_pt += 1
+				idx_horiz_unlock += 1
+				idx_horiz_lock += 1
 				
 				# Update last_sdX
 				last_sdX = sdX
+		
+		#///////////// Perform horizontal stretching //////////////////
+		
+		# Initialize, find when dX changes sign
+		last_sdY = 1
+		
+		# path_list.reverse()
+		
+		# Scan over all points
+		idx = 0
+		while True:
+			idx += 1
+			
+			# Check for end condition
+			if idx >= len(path_list):
+				break
+			
+			# If dY is zero, skip point
+			if abs(path_list[idx][1] - path_list[idx-1][1]) < 0.01:
+				sdY = last_sdY
+			else:
+				# Get sign of dY
+				sdY = (path_list[idx][1] - path_list[idx-1][1])/abs(path_list[idx][1] - path_list[idx-1][1])
+			
+			# Check for change
+			if (last_sdY != sdY):
+				# Change occured
 				
+				# Duplicate last point
+				path_list.insert(idx, [path_list[idx-1][0], path_list[idx-1][1]])
 				
+				# Get sign of X change
+				dX = (path_list[idx][0]-path_list[idx-1][0])
+				sign_incr = 1
+				while abs(dX) < 0.1:
+					sign_incr += 1
+					dX = (path_list[idx][0]-path_list[idx-sign_incr][0])
+					if sign_incr >= 10:
+						logging.error("Failed to identify change in direction while extending spiral.")
+						return False
+				sign_val = dX/abs(dX)
 				
+				# For center reversals, divide delta evenly
+				if idx > idx_horiz_lock and idx < idx_horiz_unlock:
+					sign_val /= 2
 				
+				# Shift all remaining points up/down
+				for si in range(idx, len(path_list)):
+					
+					# Modify X values
+					path_list[si][0] += self.spiral['horiz_stretch_um'] * sign_val
+				
+				# Increment index to account for added point
+				idx += 1
+				idx_reversal_pt += 1
+				idx_horiz_unlock += 1
+				idx_horiz_lock += 1
+				
+				# Update last_sdX
+				last_sdY = sdY
+		
+		# path_list.reverse()
 		
 		#
 		##### End extend spirals -----------------------------------
+		
+		# Calcualte total length of spiral
+		last_point = None
+		spiral_length = 0
+		for pt in path_list:
+			
+			# Initialize
+			if last_point is None:
+				last_point = pt
+				continue
+			
+			# Otherwise add delta
+			spiral_length += np.sqrt((pt[0] - last_point[0])**2 + (pt[1] - last_point[1])**2)
+			last_point = pt
+		
+		info(f"Total spiral length: >{spiral_length} um<.")
 		
 		# Create FlexPath object for pattern
 		path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
