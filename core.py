@@ -476,9 +476,13 @@ class ChipDesign:
 				
 				# Increment index to account for added point
 				idx += 1
-				idx_reversal_pt += 1
-				idx_horiz_unlock += 1
-				idx_horiz_lock += 1
+				if idx < idx_reversal_pt:
+					idx_reversal_pt += 1
+				if idx < idx_horiz_lock:
+					idx_horiz_lock += 1
+				if idx < idx_horiz_unlock:
+					idx_horiz_unlock += 1
+				
 				
 				# Update last_sdX
 				last_sdX = sdX
@@ -526,6 +530,7 @@ class ChipDesign:
 				
 				# For center reversals, divide delta evenly
 				if idx > idx_horiz_lock and idx < idx_horiz_unlock:
+					print("Dividing shift by 2")
 					sign_val /= 2
 				
 				# Shift all remaining points up/down
@@ -536,9 +541,12 @@ class ChipDesign:
 				
 				# Increment index to account for added point
 				idx += 1
-				idx_reversal_pt += 1
-				idx_horiz_unlock += 1
-				idx_horiz_lock += 1
+				if idx < idx_reversal_pt:
+					idx_reversal_pt += 1
+				if idx < idx_horiz_lock:
+					idx_horiz_lock += 1
+				if idx < idx_horiz_unlock:
+					idx_horiz_unlock += 1
 				
 				# Update last_sdX
 				last_sdY = sdY
