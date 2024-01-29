@@ -7,6 +7,7 @@ import getopt
 import sys
 from colorama import Fore, Back, Style
 import re
+import math
 
 PI = 3.1415926535
 
@@ -297,7 +298,8 @@ class ChipDesign:
 		#
 		#### End choose spiral position --------------------
 		
-		if self.reversal['mode'].upper() == "CIRCLE":
+		# Add in spiral reversals
+		if self.reversal['mode'].upper() == "CIRCLE": # Use circles to reverse direction
 		
 			# Create center circles
 			theta_circ1 = np.linspace(0, PI, circ_num_pts)
@@ -310,12 +312,12 @@ class ChipDesign:
 			Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
 			
 			# Change format
-			path_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X1, Y1)]
+			path_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X1, Y1)]
 			path_list1.reverse()
-			path_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X2, Y2)]
-			circ_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc1, Yc1)]
+			path_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X2, Y2)]
+			circ_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc1, Yc1)]
 			circ_list1.reverse()
-			circ_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc2, Yc2)]
+			circ_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc2, Yc2)]
 			
 			# Add tails so there are no gaps when connecting to IO components
 			tail_1 = [(path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um'])]
@@ -324,17 +326,17 @@ class ChipDesign:
 			# Union all components
 			path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
 		
-		elif self.reversal['mode'].upper() == "CIRCLE_SMOOTH":
+		elif self.reversal['mode'].upper() == "CIRCLE_SMOOTH": # Use circles with a straight-shot into the circle to prevent sharp angles
 			
 			# Change format
-			path_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X1, Y1)]
+			path_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X1, Y1)]
 			path_list1.reverse()
-			path_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(X2, Y2)]
+			path_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X2, Y2)]
 			
 			
 			# Add tails so there are no gaps when connecting to IO components
-			tail_1 = [(path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um'])]
-			tail_2 = [(path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um'])]
+			tail_1 = [[path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um']]]
+			tail_2 = [[path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um']]]
 			
 			# On inner most spirals, find where tangent is vertical. Stop spiral and extend ---------
 			# vertically so it matches smoothly with the circle reversal caps:
@@ -378,7 +380,6 @@ class ChipDesign:
 					break
 				else:
 					last_x2 = coord[0]
-				
 			
 			# Modify spiral path
 			final_y = path_list2[0][1]
@@ -399,15 +400,90 @@ class ChipDesign:
 			Yc1 = center_circ_diameter/2*np.sin(theta_circ1)
 			Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
 			Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
-					
-			circ_list1 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc1, Yc1)]
+			
+			circ_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc1, Yc1)]
 			circ_list1.reverse()
-			circ_list2 = [(x_, y_+spiral_y_offset) for x_, y_ in zip(Xc2, Yc2)]
+			circ_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc2, Yc2)]
 			
 			# Union all components
 			path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
 		
-		# Create FlexPath object for full spiral + reversal
+		#### Extend spiral with straight regions as specified --------------------
+		#
+		
+		# Shift everything down by half
+		for pl in path_list:
+			pl[1] -= self.spiral['vert_stretch_um']//2
+		
+		# Initialize, find when dX changes sign
+		last_sdX = 0
+		
+		idx_reversal_pt = len(tail_1) + len(path_list1) + len(circ_list1)
+		
+		# Scan over all points
+		idx = 0
+		while True:
+			idx += 1
+			
+			# print(f"{rd(idx/len(path_list)*100)} % complete")
+			
+			# Check for end condition
+			if idx >= len(path_list):
+				break
+			
+			# If dX is zero, skip point
+			if path_list[idx][0] - path_list[idx-1][0] == 0:
+				sdX = last_sdX
+			else:
+				# Get sign of dX
+				sdX = (path_list[idx][0] - path_list[idx-1][0])/abs(path_list[idx][0] - path_list[idx-1][0] )
+			
+			# Check for change
+			if (last_sdX != sdX) or (idx == idx_reversal_pt):
+				# Change occured
+				
+				if idx == idx_reversal_pt:
+					print("Triggering: Found middle")
+				else:
+					print(f"Triggering: idx = {idx}, rev pt = {idx_reversal_pt}")
+				
+				# Duplicate last point
+				path_list.insert(idx, [path_list[idx-1][0], path_list[idx-1][1]])
+				
+				# Get sign of Y change
+				dY = (path_list[idx][1]-path_list[idx-1][1])
+				sign_incr = 1
+				while abs(dY) < 0.1:
+					sign_incr += 1
+					dY = (path_list[idx][1]-path_list[idx-sign_incr][1])
+					if sign_incr >= 10:
+						logging.error("Failed to identify change in direction while extending spiral.")
+						return False
+				sign_val = dY/abs(dY)
+				
+				print(f"dY sign = {sign_val}, |dY| = {abs(dY)}")
+				
+				# Shift all remaining points up/down
+				for si in range(idx, len(path_list)):
+					
+					# Modify Y values
+					path_list[si][1] += self.spiral['vert_stretch_um'] * sign_val
+				
+				# Increment index to account for added point
+				idx += 1
+				idx_reversal_pt += 1
+				
+				# Update last_sdX
+				last_sdX = sdX
+				
+				
+				
+				
+		
+		#
+		##### End extend spirals -----------------------------------
+		
+		# Create FlexPath object for pattern
 		path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
 		
 		# Invert selection if color is etch
@@ -417,10 +493,10 @@ class ChipDesign:
 		# Build IO structures (meandered lines and bond pads)
 		
 		# Meander outer line: starts at (X2 and Y2)
-		self.build_io_component(path_list2[-1], self.io['outer'])
+		self.build_io_component(path_list[-1], self.io['outer'])
 		
 		# Meander inner line
-		self.build_io_component(path_list1[0], self.io['inner'])
+		self.build_io_component(path_list[0], self.io['inner'])
 		
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
