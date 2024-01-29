@@ -8,7 +8,7 @@
 		"spacing_um": 75,
 		"num_points": 2500,
 		"tail_length_um": 10,
-		"horiz_stretch_um": 150,
+		"horiz_stretch_um": 350,
 		"vert_stretch_um": 3900
 	},
 	"reversal": {
@@ -27,7 +27,7 @@
 		"num_points_bend": 100,
 		"taper": {
 			"type": "linear",
-			"length_um": 3000,
+			"length_um": 3500,
 			"segment_length_um": 16
 		},
 		"pads":{
@@ -38,11 +38,11 @@
 			"chip_edge_buffer_um": 100
 		},
 		"outer": {
-			"x_pad_offset_um": 1500,
+			"x_pad_offset_um": 750,
 			"y_line_offset_um": 250
 		},
 		"inner": {
-			"x_pad_offset_um": 3500,
+			"x_pad_offset_um": 1500,
 			"y_line_offset_um": 500
 		}
 	}
