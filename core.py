@@ -9,6 +9,11 @@ from colorama import Fore, Back, Style
 import re
 import math
 
+import pathlib
+from matplotlib.font_manager import FontProperties
+from matplotlib.textpath import TextPath
+from matplotlib import get_data_path
+
 PI = 3.1415926535
 
 #
@@ -158,6 +163,78 @@ def critical(msg:str):
 # Logger initialized
 #-----------------------------------------------------------
 
+def render_text(text, size=None, position=(0, 0), font_path=None, tolerance=0.1, layer=None):
+	
+	# Matplotlib requries pathlib.Path. Convert strings here.
+	if font_path is not None:
+		font_prop = pathlib.Path(font_path)
+	else:
+		font_prop = None
+	
+	path = TextPath(position, text, size=size, prop=font_prop)
+	polys = []
+	xmax = position[0]
+	for points, code in path.iter_segments():
+		
+		# print("Loop")
+		
+		if len(points) > 2:
+			
+			new_points = []
+			idx = 1
+			while idx < len(points):
+				new_points.append([points[idx-1], points[idx]])
+				idx += 2
+			points = new_points
+		
+		if code == path.MOVETO:
+			c = gdstk.Curve(points, tolerance=tolerance)
+		elif code == path.LINETO:
+			c.segment(points)
+		elif code == path.CURVE3:
+			c.quadratic(points)
+		elif code == path.CURVE4:
+			c.cubic(points)
+		elif code == path.CLOSEPOLY:
+			poly = c.points()
+			
+			if poly.size > 0:
+				if poly[:, 0].min() < xmax:
+					i = len(polys) - 1
+					while i >= 0:
+						
+						if isinstance(poly[0], gdstk.Polygon):
+							print("DEPOLY")
+							poly = poly[0].points
+						
+						if gdstk.inside(poly[:1], [polys[i]])[0]: # Ommited: , precision=0.1 * tolerance
+							p = polys.pop(i)
+							poly = gdstk.boolean([p],[poly],"xor",precision=0.1 * tolerance)
+							break
+						elif gdstk.inside(polys[i][:1], [poly])[0]:  # Ommited: , precision=0.1 * tolerance
+							p = polys.pop(i)
+							poly = gdstk.boolean([p],[poly],"xor",precision=0.1 * tolerance)
+						i -= 1
+
+				
+				if isinstance(poly[0], gdstk.Polygon):
+					poly = poly[0].points
+					
+				# print("\n\n\n", flush=True)
+				# print(poly, flush=True)
+				xes = [ x_[0] for x_ in poly]
+				xmax = max(xmax, max(xes))
+				polys.append(poly)
+				
+				print(xmax)
+	
+	# Convert list of ndarrays to Polygons
+	PolyObjs = []
+	for p in polys:
+		PolyObjs.append(gdstk.Polygon(p, layer=layer))
+	
+	return PolyObjs
+
 class ChipDesign:
 	
 	def __init__(self):
@@ -172,10 +249,16 @@ class ChipDesign:
 		self.tlin = {} # TLIN specifications
 		self.is_etch = False # If true, regions specify etch. Otherwise, regions specify metal/etc layer presence. Equivalent to whether or not design is inverted.
 		self.io = {} # Rules for building IO components
+		self.reticle_fiducial = {}
 		
 		self.lib = gdstk.Library()
 		self.main_cell = self.lib.new_cell("MAIN")
 		self.layers = {"NbTiN": 10, "Edges": 20}
+		
+		# Layout element objects
+		self.path = None
+		self.bulk = None
+		self.fiducials = []
 		
 		# Updated parameters
 		self.corner_bl = (-1, -1)
@@ -527,7 +610,6 @@ class ChipDesign:
 				
 				# For center reversals, divide delta evenly
 				if idx > idx_horiz_lock and idx < idx_horiz_unlock:
-					print("Dividing shift by 2")
 					sign_val /= 2
 				
 				# Shift all remaining points up/down
@@ -570,10 +652,10 @@ class ChipDesign:
 		info(f"Total spiral length: >{spiral_length} um<.")
 		
 		# Create FlexPath object for pattern
-		path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
+		self.path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
 		
 		# Invert selection if color is etch
-		bulk = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
+		self.bulk = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
 		
 		# ---------------------------------------------------------------------
 		# Build IO structures (meandered lines and bond pads)
@@ -585,19 +667,52 @@ class ChipDesign:
 		self.build_io_component(path_list[0], self.io['inner'])
 		
 		# ---------------------------------------------------------------------
+		# Build IO structures (meandered lines and bond pads)
+		
+		if self.reticle_fiducial['type'].upper() == "L_CORNER":
+			
+			# Define local coordinates
+			x_right = self.chip_size_um[0]//2
+			x_left = -1*x_right
+			y_up = self.chip_size_um[1]//2
+			y_down = -1*y_up
+			
+			l_fid = self.reticle_fiducial['length_um']
+			w_fid = self.reticle_fiducial['width_um']
+			
+			self.fiducials.append(gdstk.rectangle( (x_left, y_up-l_fid), (x_left+w_fid, y_up), layer=self.layers["NbTiN"]) )
+			self.fiducials.append(gdstk.rectangle( (x_left, y_up-w_fid), (x_left+l_fid, y_up), layer=self.layers["NbTiN"]) )
+			
+			self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+w_fid, y_down+l_fid), layer=self.layers["NbTiN"]) )
+			self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+l_fid, y_down+w_fid ), layer=self.layers["NbTiN"]) )
+			
+			self.fiducials.append(gdstk.rectangle( (x_right, y_down ), (x_right-w_fid, y_down+l_fid ), layer=self.layers["NbTiN"]) )
+			self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_down ), (x_right, y_down+w_fid), layer=self.layers["NbTiN"]) )
+			
+			self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_up-w_fid ), (x_right, y_up ), layer=self.layers["NbTiN"]) )
+			self.fiducials.append(gdstk.rectangle( (x_right-w_fid, y_up ), (x_right, y_up-l_fid ), layer=self.layers["NbTiN"]) )
+		
+		# ---------------------------------------------------------------------
 		# Add objects to chip design
 		
 		if self.is_etch:
 			info(f"Inverting layers to calculate etch pattern.")
-			inv_paths = gdstk.boolean(bulk, path, "not", layer=self.layers["NbTiN"])
+			inv_paths = gdstk.boolean(self.bulk, self.path, "not", layer=self.layers["NbTiN"])
 			info(f"Adding etch layers (Inverted)")
 			for ip in inv_paths:
 				debug(f"Added path from inverted path list.")
 				self.main_cell.add(ip)
+			
+			# TODO: Invert fiducials
+			# TODO: Invert io components
+			# TODO: Invert graphics
 		else:
 			info(f"Adding metal layers (Non-inverted)")
-			self.main_cell.add(path)
-			self.main_cell.add(bulk)
+			self.main_cell.add(self.path)
+			self.main_cell.add(self.bulk)
+			
+			for f in self.fiducials:
+				self.main_cell.add(f)
 		
 		return True
 	
@@ -797,6 +912,19 @@ class ChipDesign:
 			warning("Meandered line length is less than taper length! Sharp edge present.")
 		
 		# (self.corner_bl[0]+self.io['outer']['x_offset_um'], self.corner_bl[1]+self.io['outer']['y_offset_um'])
+	
+	def custom_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None):
+		
+		# Get default layer
+		if layer is None:
+			layer = self.layers['NbTiN']
+		
+		# Get text objects
+		text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=layer)
+		
+		# Write to design
+		for to in text_obj:
+			self.main_cell.add(to)
 		
 	
 	def write(self, filename:str):

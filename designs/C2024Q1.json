@@ -45,5 +45,10 @@
 			"x_pad_offset_um": 1500,
 			"y_line_offset_um": 500
 		}
+	},
+	"reticle_fiducial": {
+		"type": "L_CORNER",
+		"length_um": 200,
+		"width_um": 100
 	}
 }
