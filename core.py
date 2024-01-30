@@ -11,10 +11,11 @@ import math
 
 PI = 3.1415926535
 
-#TODO: For designs which are NOT inverted microstrip, you're going to
-#      want to add GSG pads (currently just signal b/c cannot route gnd
-#      to signal plane).
-
+#
+# TODO: For designs which are NOT inverted microstrip, you're going to
+#       want to add GSG pads (currently just signal b/c cannot route gnd
+#       to signal plane).
+#
 #-----------------------------------------------------------
 # Parse arguments and initialize logger
 
@@ -261,10 +262,6 @@ class ChipDesign:
 		Y1 = R1*np.sin(theta1)
 		X2 = -1*R2*np.cos(theta2)
 		Y2 = -1*R2*np.sin(theta2)
-		
-		#TODO: Calculate spiral length
-		
-		#TODO: Add straight shots for oval spiral
 		
 		### Select spiral Y-offset/ Check fits on wafer ------------
 		#
