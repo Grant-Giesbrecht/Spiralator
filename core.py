@@ -176,8 +176,6 @@ def render_text(text, size=None, position=(0, 0), font_path=None, tolerance=0.1,
 	xmax = position[0]
 	for points, code in path.iter_segments():
 		
-		# print("Loop")
-		
 		if len(points) > 2:
 			
 			new_points = []
@@ -204,7 +202,6 @@ def render_text(text, size=None, position=(0, 0), font_path=None, tolerance=0.1,
 					while i >= 0:
 						
 						if isinstance(poly[0], gdstk.Polygon):
-							print("DEPOLY")
 							poly = poly[0].points
 						
 						if gdstk.inside(poly[:1], [polys[i]])[0]: # Ommited: , precision=0.1 * tolerance
@@ -220,13 +217,9 @@ def render_text(text, size=None, position=(0, 0), font_path=None, tolerance=0.1,
 				if isinstance(poly[0], gdstk.Polygon):
 					poly = poly[0].points
 					
-				# print("\n\n\n", flush=True)
-				# print(poly, flush=True)
 				xes = [ x_[0] for x_ in poly]
 				xmax = max(xmax, max(xes))
 				polys.append(poly)
-				
-				print(xmax)
 	
 	# Convert list of ndarrays to Polygons
 	PolyObjs = []
@@ -510,8 +503,6 @@ class ChipDesign:
 		while True:
 			idx += 1
 			
-			# print(f"{rd(idx/len(path_list)*100)} % complete")
-			
 			# Check for end condition
 			if idx >= len(path_list):
 				break
@@ -526,11 +517,6 @@ class ChipDesign:
 			# Check for change
 			if (last_sdX != sdX) or (idx == idx_reversal_pt):
 				# Change occured
-				
-				# if idx == idx_reversal_pt:
-				# 	print("Triggering: Found middle")
-				# else:
-				# 	print(f"Triggering: idx = {idx}, rev pt = {idx_reversal_pt}")
 				
 				# Duplicate last point
 				path_list.insert(idx, [path_list[idx-1][0], path_list[idx-1][1]])

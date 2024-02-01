@@ -8,11 +8,12 @@
 		"spacing_um": 100,
 		"num_points": 2500,
 		"tail_length_um": 10,
-		"horiz_stretch_um": 0
+		"horiz_stretch_um": 0,
+		"vert_stretch_um": 0
 	},
 	"reversal": {
-		"mode": "circle",
-		"diameter_um": 85,
+		"mode": "circle_smooth",
+		"diameter_um": 200,
 		"num_points": 120
 	},
 	"tlin": {
@@ -26,7 +27,7 @@
 		"num_points_bend": 100,
 		"taper": {
 			"type": "linear",
-			"length_um": 3600,
+			"length_um": 3500,
 			"segment_length_um": 16
 		},
 		"pads":{
@@ -44,5 +45,10 @@
 			"x_pad_offset_um": 6150,
 			"y_line_offset_um": 500
 		}
+	},
+	"reticle_fiducial": {
+		"type": "L_CORNER",
+		"length_um": 200,
+		"width_um": 100
 	}
 }
