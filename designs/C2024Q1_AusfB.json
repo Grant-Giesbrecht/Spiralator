@@ -9,7 +9,7 @@
 		"num_points": 2500,
 		"tail_length_um": 10,
 		"horiz_stretch_um": 350,
-		"vert_stretch_um": 3900
+		"vert_stretch_um": 2400
 	},
 	"reversal": {
 		"mode": "circle_smooth",
@@ -23,7 +23,7 @@
 	},
 	"is_etch": false,
 	"io": {
-		"same_side": true,
+		"same_side": false,
 		"curve_radius_um": 170,
 		"num_points_bend": 100,
 		"taper": {
@@ -39,12 +39,12 @@
 			"chip_edge_buffer_um": 100
 		},
 		"outer": {
-			"x_pad_offset_um": 750,
+			"x_pad_offset_um": 2500,
 			"y_line_offset_um": 250
 		},
 		"inner": {
-			"x_pad_offset_um": 1500,
-			"y_line_offset_um": 500
+			"x_pad_offset_um": 2500,
+			"y_line_offset_um": 250
 		}
 	},
 	"reticle_fiducial": {
