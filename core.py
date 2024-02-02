@@ -426,8 +426,11 @@ class ChipDesign:
 			circ_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc2, Yc2)]
 			
 			# Add tails so there are no gaps when connecting to IO components
-			tail_1 = [(path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um'])]
-			tail_2 = [(path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um'])]
+			tail_1 = [[path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um']]]
+			if self.io['same_side']:
+				tail_2 = [[path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um']]]
+			else:
+				tail_2 = [[path_list2[-1][0], path_list2[-1][1]+self.spiral['tail_length_um']]]
 			
 			# Union all components
 			path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
@@ -442,7 +445,10 @@ class ChipDesign:
 			
 			# Add tails so there are no gaps when connecting to IO components
 			tail_1 = [[path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um']]]
-			tail_2 = [[path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um']]]
+			if self.io['same_side']:
+				tail_2 = [[path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um']]]
+			else:
+				tail_2 = [[path_list2[-1][0], path_list2[-1][1]+self.spiral['tail_length_um']]]
 			
 			# On inner most spirals, find where tangent is vertical. Stop spiral and extend ---------
 			# vertically so it matches smoothly with the circle reversal caps:
@@ -616,19 +622,19 @@ class ChipDesign:
 				sdY = last_sdY
 			else:
 				
-				# Get sign of last dY change
-				sign_incr = 1
-				sdY = (path_list[sign_incr][1]-path_list[0][1])
-				while abs(sdY) < 0.1:
-					sign_incr += 1
-					sdY = (path_list[sign_incr][1]-path_list[0][1])
-					if sign_incr >= 10:
-						logging.error("Failed to identify change in direction while extending spiral.")
-						return False
-				sdY = sdY/abs(sdY)
+				# # Get sign of last dY change
+				# sign_incr = 0
+				# sdY = (path_list[idx+sign_incr][1]-path_list[idx][1])
+				# while abs(sdY) < 0.1:
+				# 	sign_incr += 1
+				# 	sdY = (path_list[idx+sign_incr][1]-path_list[idx-1][1])
+				# 	if sign_incr >= 10:
+				# 		logging.error("Failed to identify change in direction while extending spiral.")
+				# 		return False
+				# sdY = sdY/abs(sdY)
 				
-				# # Get sign of dY
-				# sdY = (path_list[idx][1] - path_list[idx-1][1])/abs(path_list[idx][1] - path_list[idx-1][1])
+				# Get sign of dY
+				sdY = (path_list[idx][1] - path_list[idx-1][1])/abs(path_list[idx][1] - path_list[idx-1][1])
 			
 			# Check for change
 			if (last_sdY != sdY):
