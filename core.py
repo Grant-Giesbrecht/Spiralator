@@ -604,7 +604,6 @@ class ChipDesign:
 				logging.error("Failed to identify change in direction while extending spiral.")
 				return False
 		last_sdY = last_sdY/abs(last_sdY)
-		print(last_sdY)
 		
 		# path_list.reverse()
 		
@@ -639,8 +638,6 @@ class ChipDesign:
 			# Check for change
 			if (last_sdY != sdY):
 				# Change occured
-				
-				print("Changed!")
 				
 				# Duplicate last point
 				path_list.insert(idx, [path_list[idx-1][0], path_list[idx-1][1]])
