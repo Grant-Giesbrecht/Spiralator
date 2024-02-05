@@ -1081,7 +1081,8 @@ class ChipDesign:
 		if dist < taper_length:
 			warning("Meandered line length is less than taper length! Sharp edge present.")
 	
-	def custom_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None):
+	def insert_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None):
+		''' Inserts custom text to the chip. Can use any TrueType font (rather than just the default supplied with gdstk). '''
 		
 		# Get default layer
 		if layer is None:
@@ -1093,7 +1094,68 @@ class ChipDesign:
 		# Write to design
 		for to in text_obj:
 			self.main_cell.add(to)
+	
+	def insert_graphic(self, position:list, gds_filename:str, width_um:float=-1, read_layer:int=1, read_datatype:int=0, write_layer:int=None, write_datatype:int=None):
+		''' Accepts a GDS file and applies the graphic to the chip. '''
 		
+		read_filt = {(read_layer, read_datatype)}
+		
+		# Get default layer/datatype
+		if write_layer is None:
+			write_layer = self.layers['NbTiN']
+		if write_datatype is None:
+			write_datatype = 0
+		
+		# Read GDS File
+		try:
+			lib_in = gdstk.read_gds(gds_filename, filter=read_filt)
+		except:
+			error(f"Failed to read file '>{gds_filename}<'.")
+			return False
+		
+		# Access top level cell
+		cell_in = lib_in.top_level()
+		
+		# Access polygons
+		all_polys = cell_in[0].polygons
+		
+		# Get all bounding boxes
+		all_bb = []
+		for poly in all_polys:
+			# Check current size and scale appropriately
+			bb = poly.bounding_box()
+			all_bb.append([[bb[0][0], bb[0][1]], [bb[1][0], bb[1][1]]])
+		
+		# Get master bounding box
+		bb = all_bb[0]
+		for bb_ in all_bb:
+			bb[0][0] = min(bb[0][0], bb_[0][0])
+			bb[0][1] = min(bb[0][1], bb_[0][1])
+			bb[1][0] = max(bb[1][0], bb_[1][0])
+			bb[1][1] = max(bb[1][1], bb_[1][1])
+		
+		# Scan over all polygons
+		for poly in all_polys:
+			
+			# Scale
+			if width_um > 0:
+				width = bb[1][0]-bb[0][0]
+				poly.scale(width_um/width)
+				info(f"Scaling graphic to width=>{width_um} um<.")
+			
+			# Move to requested position
+			poly.translate(position[0]-bb[0][0], position[1]-bb[0][1])
+		
+			# Add to main cell
+			self.main_cell.add(poly)
+			if write_layer is not None:
+				poly.layer = write_layer
+			if write_datatype is not None:
+				poly.datatype = write_datatype
+		
+		info(f"Added graphic from file '>{gds_filename}<'.")
+		
+		return True
 	
 	def write(self, filename:str):
 		
