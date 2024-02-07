@@ -51,9 +51,11 @@
 	"reticle_fiducial": {
 		"type": "L_CORNER",
 		"length_um": 200,
-		"width_um": 100
+		"width_um": 100,
+		"on_gnd": true
 	},
 	"aSi_pad_buffer_um": 105,
 	"gnd_pad_buffer_x_um": 110,
-	"gnd_pad_buffer_y_um": 110
+	"gnd_pad_buffer_y_um": 110,
+	"graphics_on_gnd": true
 }

@@ -247,6 +247,7 @@ class ChipDesign:
 		self.aSi_pad_buffer_um = None
 		self.gnd_pad_buffer_x_um = None
 		self.gnd_pad_buffer_y_um = None
+		self.graphics_on_gnd = None
 		
 		self.lib = gdstk.Library()
 		self.main_cell = self.lib.new_cell("MAIN")
@@ -821,8 +822,34 @@ class ChipDesign:
 			self.main_cell.add(self.path)
 			self.main_cell.add(self.bulk)
 			
-			for f in self.fiducials:
-				self.main_cell.add(f)
+			
+				
+			if self.reticle_fiducial['on_gnd']:
+				# Get polygon
+				new_gnd = []
+				for poly in self.main_cell.polygons:
+					if poly.layer == self.layers['GND']:
+						new_gnd.append(poly)
+				
+				# Check ground plane was found
+				if len(new_gnd) < 1:
+					error("Failed to find ground plane. Cannot add graphic to ground plane.")
+					return False
+				
+				# Remove old ground plane
+				self.main_cell.remove(*new_gnd)
+				
+				# Subtract text from ground
+				for f in self.fiducials:
+					new_gnd = gdstk.boolean(new_gnd, f, "not", layer=self.layers["GND"])
+				
+				# Replace ground plane in cell
+				for ng in new_gnd:
+					self.main_cell.add(ng)
+				
+			else:
+				for f in self.fiducials:
+					self.main_cell.add(f)
 
 		return True
 	
@@ -1159,22 +1186,51 @@ class ChipDesign:
 	def insert_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None):
 		''' Inserts custom text to the chip. Can use any TrueType font (rather than just the default supplied with gdstk). '''
 		
-		# Get default layer
-		if layer is None:
-			layer = self.layers['NbTiN']
+		if self.graphics_on_gnd:
+			
+			# Get polygon
+			new_gnd = []
+			for poly in self.main_cell.polygons:
+				if poly.layer == self.layers['GND']:
+					new_gnd.append(poly)
+			
+			# Check ground plane was found
+			if len(new_gnd) < 1:
+				error("Failed to find ground plane. Cannot add graphic to ground plane.")
+				return False
+			
+			# Remove old ground plane
+			self.main_cell.remove(*new_gnd)
+			
+			# Get text objects
+			text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=self.layers['NbTiN'])
+			
+			# Subtract text from ground
+			for to in text_obj:
+				new_gnd = gdstk.boolean(new_gnd, text_obj, "not", layer=self.layers["GND"])
+			
+			# Replace ground plane in cell
+			for ng in new_gnd:
+				self.main_cell.add(ng)
+			
+		else:
 		
-		# Get text objects
-		text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=layer)
-		
-		# Write to design
-		for to in text_obj:
-			self.main_cell.add(to)
+			# Get default layer
+			if layer is None:
+				layer = self.layers['NbTiN']
+			
+			# Get text objects
+			text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=layer)
+			
+			# Write to design
+			for to in text_obj:
+				self.main_cell.add(to)
 	
 	def insert_graphic(self, position:list, gds_filename:str, width_um:float=-1, read_layer:int=1, read_datatype:int=0, write_layer:int=None, write_datatype:int=None):
 		''' Accepts a GDS file and applies the graphic to the chip. '''
 		
 		read_filt = {(read_layer, read_datatype)}
-		
+			
 		# Get default layer/datatype
 		if write_layer is None:
 			write_layer = self.layers['NbTiN']
@@ -1221,12 +1277,41 @@ class ChipDesign:
 			# Move to requested position
 			poly.translate(position[0]-bb[0][0], position[1]-bb[0][1])
 		
-			# Add to main cell
-			self.main_cell.add(poly)
-			if write_layer is not None:
-				poly.layer = write_layer
-			if write_datatype is not None:
-				poly.datatype = write_datatype
+		if self.graphics_on_gnd:
+			
+			# Get polygon
+			new_gnd = []
+			for poly in self.main_cell.polygons:
+				if poly.layer == self.layers['GND']:
+					new_gnd.append(poly)
+			
+			# Check ground plane was found
+			if len(new_gnd) < 1:
+				error("Failed to find ground plane. Cannot add graphic to ground plane.")
+				return False
+			
+			# Remove old ground plane
+			self.main_cell.remove(*new_gnd)
+			
+			# Subtract text from ground
+			for poly in all_polys:
+				new_gnd = gdstk.boolean(new_gnd, poly, "not", layer=self.layers["GND"])
+			
+			# Replace ground plane in cell
+			for ng in new_gnd:
+				self.main_cell.add(ng)
+				
+		else:
+			
+			# Scan over all polygons
+			for poly in all_polys:
+			
+				# Add to main cell
+				self.main_cell.add(poly)
+				if write_layer is not None:
+					poly.layer = write_layer
+				if write_datatype is not None:
+					poly.datatype = write_datatype
 		
 		info(f"Added graphic from file '>{gds_filename}<'.")
 		

@@ -55,5 +55,6 @@
 	},
 	"aSi_pad_buffer_um": 5,
 	"gnd_pad_buffer_x_um": 135,
-	"gnd_pad_buffer_y_um": 10
+	"gnd_pad_buffer_y_um": 10,
+	"graphics_on_gnd": true
 }
