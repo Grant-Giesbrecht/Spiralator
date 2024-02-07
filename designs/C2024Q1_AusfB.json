@@ -53,7 +53,7 @@
 		"length_um": 200,
 		"width_um": 100
 	},
-	"aSi_pad_buffer_um": 5,
-	"gnd_pad_buffer_x_um": 135,
-	"gnd_pad_buffer_y_um": 10
+	"aSi_pad_buffer_um": 105,
+	"gnd_pad_buffer_x_um": 110,
+	"gnd_pad_buffer_y_um": 110
 }
