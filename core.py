@@ -255,6 +255,7 @@ class ChipDesign:
 		# Layout element objects
 		self.path = None
 		self.bulk = None
+		self.gnd = None
 		self.fiducials = []
 		self.temp_pads = [] # Stores bond pad dimensions. Not added to gdstk cell, but used to calculate aSi and gnd shapes.
 		
@@ -706,6 +707,7 @@ class ChipDesign:
 		
 		# Invert selection if color is etch
 		self.bulk = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
+		self.gnd = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
 		
 		# ---------------------------------------------------------------------
 		# Build IO structures (meandered lines and bond pads)
@@ -748,10 +750,22 @@ class ChipDesign:
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
 		
-		# Add aSi etch layer
+		# Add Al layer
 		for pad in self.temp_pads:
 			
-			print(pad)
+			bl = pad[0]
+			tr = pad[1]
+			
+			# Create Rectangle
+			Al_pad = gdstk.rectangle( (bl[0], bl[1]), (tr[0], tr[1]), layer=self.layers['Aluminum'] )
+			
+			# Add to cell
+			self.main_cell.add(Al_pad)
+		
+		#TODO: Check file for if aSi is etch or releif
+		
+		# Add aSi etch layer
+		for pad in self.temp_pads:
 			
 			bl = pad[0]
 			tr = pad[1]
@@ -765,6 +779,28 @@ class ChipDesign:
 			# Add to object
 			for bph in bond_pad_hole:
 				self.main_cell.add(bph)
+		
+		# Add groundplane layer
+		for pad in self.temp_pads:
+			
+			bl = pad[0]
+			tr = pad[1]
+			
+			# Create Rectangle
+			bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.gnd_pad_buffer_x_um, bl[1]-self.gnd_pad_buffer_y_um), (tr[0]+self.gnd_pad_buffer_x_um, tr[1]+self.gnd_pad_buffer_y_um) )
+			
+			# Trim the rectangle so it doesn't extend over the edge of the chip
+			gnd_list = gdstk.boolean(self.gnd, bond_pad_hole_positive, "not", layer=self.layers["GND"])
+			
+			# Unpack list to single object
+			if len(gnd_list) != 1:
+				error("Failed to generate ground plane")
+				return False
+			else:
+				self.gnd = gnd_list[0]
+				
+		# Add to cell
+		self.main_cell.add(self.gnd)
 		
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
@@ -1099,8 +1135,9 @@ class ChipDesign:
 			
 			# Record bond pad dimensions
 			pad_bb = []
-			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']+baseline_offset]) # bottom left
-			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset]) # top right
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset]) # top right
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']+baseline_offset]) # bottom left
+			
 			self.temp_pads.append(pad_bb)
 		
 		# Add points and widths to curve
