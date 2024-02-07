@@ -21,7 +21,8 @@
 		"Wcenter_um": 3,
 		"Wgap_um": 3
 	},
-	"is_etch": false,
+	"NbTiN_is_etch": false,
+	"aSi_is_etch": true,
 	"io": {
 		"same_side": false,
 		"curve_radius_um": 170,
@@ -51,5 +52,8 @@
 		"type": "L_CORNER",
 		"length_um": 200,
 		"width_um": 100
-	}
+	},
+	"aSi_pad_buffer_um": 5,
+	"gnd_pad_buffer_x_um": 135,
+	"gnd_pad_buffer_y_um": 10
 }

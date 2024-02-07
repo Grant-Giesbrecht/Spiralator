@@ -21,7 +21,7 @@
 		"Wcenter_um": 3,
 		"Wgap_um": 3
 	},
-	"is_etch": false,
+	"NbTiN_is_etch": false,
 	"io": {
 		"curve_radius_um": 170,
 		"num_points_bend": 100,

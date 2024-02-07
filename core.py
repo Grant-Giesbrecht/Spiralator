@@ -240,18 +240,23 @@ class ChipDesign:
 		self.spiral = {} # Spiral design
 		self.reversal = {} # Specs for how build reversal of spiral at center
 		self.tlin = {} # TLIN specifications
-		self.is_etch = False # If true, regions specify etch. Otherwise, regions specify metal/etc layer presence. Equivalent to whether or not design is inverted.
+		self.NbTiN_is_etch = False # If true, regions specify etch. Otherwise, regions specify metal/etc layer presence. Equivalent to whether or not design is inverted.
+		self.aSi_is_etch = False # If true, regions specify etch. Otherwise, regions specify metal/etc layer presence. Equivalent to whether or not design is inverted.
 		self.io = {} # Rules for building IO components
 		self.reticle_fiducial = {}
+		self.aSi_pad_buffer_um = None
+		self.gnd_pad_buffer_x_um = None
+		self.gnd_pad_buffer_y_um = None
 		
 		self.lib = gdstk.Library()
 		self.main_cell = self.lib.new_cell("MAIN")
-		self.layers = {"NbTiN": 10, "Edges": 20}
+		self.layers = {"NbTiN": 0, "Aluminum": 1, "Edges": 4, "aSi": 5, "GND": 6}
 		
 		# Layout element objects
 		self.path = None
 		self.bulk = None
 		self.fiducials = []
+		self.temp_pads = [] # Stores bond pad dimensions. Not added to gdstk cell, but used to calculate aSi and gnd shapes.
 		
 		# Updated parameters
 		self.corner_bl = (-1, -1)
@@ -743,7 +748,28 @@ class ChipDesign:
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
 		
-		if self.is_etch:
+		# Add aSi etch layer
+		for pad in self.temp_pads:
+			
+			print(pad)
+			
+			bl = pad[0]
+			tr = pad[1]
+			
+			# Create Rectangle
+			bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.aSi_pad_buffer_um, bl[1]-self.aSi_pad_buffer_um), (tr[0]+self.aSi_pad_buffer_um, tr[1]+self.aSi_pad_buffer_um) )
+			
+			# Trim the rectangle so it doesn't extend over the edge of the chip
+			bond_pad_hole = gdstk.boolean(self.bulk, bond_pad_hole_positive, "and", layer=self.layers["aSi"])
+			
+			# Add to object
+			for bph in bond_pad_hole:
+				self.main_cell.add(bph)
+		
+		# ---------------------------------------------------------------------
+		# Add objects to chip design
+		
+		if self.NbTiN_is_etch:
 			info(f"Inverting layers to calculate etch pattern.")
 			inv_paths = gdstk.boolean(self.bulk, self.path, "not", layer=self.layers["NbTiN"])
 			info(f"Adding etch layers (Inverted)")
@@ -761,7 +787,7 @@ class ChipDesign:
 			
 			for f in self.fiducials:
 				self.main_cell.add(f)
-		
+
 		return True
 	
 	def calc_taper_width(self, z:float):
@@ -1060,10 +1086,22 @@ class ChipDesign:
 			io_line = gdstk.FlexPath((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']-baseline_offset), self.io['pads']['width_um'], layer=self.layers["NbTiN"])
 			io_line.segment((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset), self.io['pads']['width_um'])
 			io_line.segment((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']+self.io['pads']['taper_height_um']-baseline_offset), self.io['pads']['taper_width_um'])
+			
+			# Record bond pad dimensions
+			pad_bb = []
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, self.io['pads']['chip_edge_buffer_um']-baseline_offset]) # bottom left
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset]) # top right
+			self.temp_pads.append(pad_bb)
 		else:
 			io_line = gdstk.FlexPath((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']+baseline_offset), self.io['pads']['width_um'], layer=self.layers["NbTiN"])
 			io_line.segment((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset), self.io['pads']['width_um'])
 			io_line.segment((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']-self.io['pads']['taper_height_um']+baseline_offset), self.io['pads']['taper_width_um'])
+			
+			# Record bond pad dimensions
+			pad_bb = []
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']+baseline_offset]) # bottom left
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset]) # top right
+			self.temp_pads.append(pad_bb)
 		
 		# Add points and widths to curve
 		for idx,pt in enumerate(point_list): # width_list):

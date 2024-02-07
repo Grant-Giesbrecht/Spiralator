@@ -20,7 +20,7 @@
 		"Wcenter_um": 3, // Center conductor width 
 		"Wgap_um": 3 // Gap width for CPW (Not implemented)
 	},
-	"is_etch": false, // Is the drawn layer etch? If so, the design will be inverted. 
+	"NbTiN_is_etch": false, // Is the drawn layer etch? If so, the design will be inverted. 
 	"io": { // Parameters of the IO structures
 		"curve_radius_um": 170, // Radius of curvature for 90 degree angles in the meandered lines
 		"num_points_bend": 100, // NUmber of points per 90 degree bend
