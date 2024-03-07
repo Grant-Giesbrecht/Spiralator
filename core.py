@@ -244,9 +244,14 @@ class ChipDesign:
 		self.aSi_is_etch = False # If true, regions specify etch. Otherwise, regions specify metal/etc layer presence. Equivalent to whether or not design is inverted.
 		self.io = {} # Rules for building IO components
 		self.reticle_fiducial = {}
-		self.aSi_pad_buffer_um = None
-		self.gnd_pad_buffer_x_um = None
-		self.gnd_pad_buffer_y_um = None
+		
+		
+		# For the time being...
+		warning("Replace this section of code!!!!")
+		self.aSi_pad_buffer_um = 105
+		self.gnd_pad_buffer_x_um = 150
+		self.gnd_pad_buffer_y_um = 110
+		
 		self.graphics_on_gnd = None
 		
 		self.lib = gdstk.Library()
@@ -269,6 +274,17 @@ class ChipDesign:
 	
 	def update(self):
 		""" Update automatically calcualted parameters """
+		
+		# Save taper_height_um parameter
+		#    Although this can be derived from the fuax_cpw_taper>cpw_sections_lengths_um parameter
+		#    lots of bits of code expect this older parameter. For ease, I'm just re-calculating it
+		#    automatically.
+		self.io['pads']['taper_height_um'] = 0
+		for csl in self.io['faux_cpw_taper']['cpw_section_lengths_um']:
+			self.io['pads']['taper_height_um'] += csl
+		
+		# Save taper_width_um parameter
+		self.io['pads']['taper_width_um'] = self.io['faux_cpw_taper']['cpw_widths_um'][-1]
 		
 		self.corner_bl = (-self.chip_size_um[0]//2, -self.chip_size_um[1]//2)
 		self.corner_tr = (self.chip_size_um[0]//2, self.chip_size_um[1]//2)
@@ -771,9 +787,15 @@ class ChipDesign:
 			bl = pad[0]
 			tr = pad[1]
 			
-			# Create Rectangle
-			bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.aSi_pad_buffer_um, bl[1]-self.aSi_pad_buffer_um), (tr[0]+self.aSi_pad_buffer_um, tr[1]+self.aSi_pad_buffer_um) )
+			# Get direction towards edge of chip (ie. is this bond pad above or below origin)
+			edge_direction = np.sign(bl[1])
 			
+			# Create Rectangle
+			if edge_direction < 0: # Pad on bottom of chip
+				bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.io['aSi_etch']['x_buffer_um'], bl[1]-self.io['aSi_etch']['extend_towards_edge_um']), (tr[0]+self.io['aSi_etch']['x_buffer_um'], tr[1]-self.io['pads']['height_um']+self.io['pads']['pad_exposed_height_um']) )
+			else:
+				bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.io['aSi_etch']['x_buffer_um'], bl[1]+self.io['pads']['height_um']-self.io['pads']['pad_exposed_height_um']), (tr[0]+self.io['aSi_etch']['x_buffer_um'], tr[1]+self.io['aSi_etch']['extend_towards_edge_um'] ) )
+				
 			# Trim the rectangle so it doesn't extend over the edge of the chip
 			bond_pad_hole = gdstk.boolean(self.bulk, bond_pad_hole_positive, "and", layer=self.layers["aSi"])
 			
@@ -787,8 +809,40 @@ class ChipDesign:
 			bl = pad[0]
 			tr = pad[1]
 			
+			# Get offset parameters
+			baseline_offset = self.chip_size_um[1]//2 # Offset to translate (y = 0) to actual bottom of chip
+			just_offset = self.chip_size_um[0]//2 # Offset to translate (x = 0) to actual left side of chip
+			
+			# Get direction towards edge of chip (ie. is this bond pad above or below origin)
+			edge_direction = np.sign(bl[1])
+			
 			# Create Rectangle
-			bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.gnd_pad_buffer_x_um, bl[1]-self.gnd_pad_buffer_y_um), (tr[0]+self.gnd_pad_buffer_x_um, tr[1]+self.gnd_pad_buffer_y_um) )
+			if edge_direction < 0: # Pad on bottom of chip
+				bond_pad_hole_positive = gdstk.FlexPath((bl[0]+self.io['pads']['width_um']/2, -baseline_offset-10), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				bond_pad_hole_positive.segment((tr[0]-self.io['pads']['width_um']/2, tr[1]), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				
+				# Loop over each section of CPW taper and add it
+				last_height = tr[1]
+				for idx, seg_l in enumerate(self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+					
+					seg_w = self.io['faux_cpw_taper']['cpw_widths_um'][idx]
+					seg_g = self.io['faux_cpw_taper']['cpw_gaps_um'][idx]
+					
+					last_height += seg_l
+					bond_pad_hole_positive.segment((tr[0]-self.io['pads']['width_um']/2, last_height), seg_w+seg_g*2)
+			else:
+				bond_pad_hole_positive = gdstk.FlexPath((tr[0]-self.io['pads']['width_um']/2, baseline_offset+10), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				bond_pad_hole_positive.segment((bl[0]+self.io['pads']['width_um']/2, bl[1]), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				
+				# Loop over each section of CPW taper and add it
+				last_height = bl[1]
+				for idx, seg_l in enumerate(self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+					
+					seg_w = self.io['faux_cpw_taper']['cpw_widths_um'][idx]
+					seg_g = self.io['faux_cpw_taper']['cpw_gaps_um'][idx]
+					
+					last_height -= seg_l
+					bond_pad_hole_positive.segment((tr[0]-self.io['pads']['width_um']/2, last_height), seg_w+seg_g*2)
 			
 			# Trim the rectangle so it doesn't extend over the edge of the chip
 			gnd_list = gdstk.boolean(self.gnd, bond_pad_hole_positive, "not", layer=self.layers["GND"])
@@ -1146,11 +1200,18 @@ class ChipDesign:
 		
 		# Initialize IO structure with bond pad
 		if not use_alt_side:
+			
+			# Create rectangular bond pad area
 			io_line = gdstk.FlexPath((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']-baseline_offset), self.io['pads']['width_um'], layer=self.layers["NbTiN"])
 			io_line.segment((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset), self.io['pads']['width_um'])
-			io_line.segment((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']+self.io['pads']['taper_height_um']-baseline_offset), self.io['pads']['taper_width_um'])
 			
-			# Record bond pad dimensions
+			# Loop over each section of CPW taper and add it
+			last_height = self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset
+			for seg_w, seg_l in zip(self.io['faux_cpw_taper']['cpw_widths_um'], self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+				last_height += seg_l
+				io_line.segment((location_rules['x_pad_offset_um']-just_offset, last_height), seg_w)
+			
+			# Record bond pad dimensions TODO: DOes this need to changge for CPW taper?
 			pad_bb = []
 			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, self.io['pads']['chip_edge_buffer_um']-baseline_offset]) # bottom left
 			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset]) # top right
@@ -1158,9 +1219,14 @@ class ChipDesign:
 		else:
 			io_line = gdstk.FlexPath((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']+baseline_offset), self.io['pads']['width_um'], layer=self.layers["NbTiN"])
 			io_line.segment((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset), self.io['pads']['width_um'])
-			io_line.segment((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']-self.io['pads']['taper_height_um']+baseline_offset), self.io['pads']['taper_width_um'])
 			
-			# Record bond pad dimensions
+			# Loop over each section of CPW taper and add it
+			last_height = -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset
+			for seg_w, seg_l in zip(self.io['faux_cpw_taper']['cpw_widths_um'], self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+				last_height -= seg_l
+				io_line.segment((location_rules['x_pad_offset_um']-just_offset, last_height), seg_w)
+			
+			# Record bond pad dimensions TODO: DOes this need to changge for CPW taper?
 			pad_bb = []
 			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset]) # top right
 			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']+baseline_offset]) # bottom left
