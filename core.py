@@ -1479,30 +1479,17 @@ class ChipDesign:
 		
 		if self.graphics_on_gnd:
 			
-			# Get polygon
-			new_gnd = []
-			for poly in self.main_cell.polygons:
-				if poly.layer == self.layers['GND']:
-					new_gnd.append(poly)
-			
 			# Check ground plane was found
-			if len(new_gnd) < 1:
+			if len(self.gnd) < 1:
 				error("Failed to find ground plane. Cannot add graphic to ground plane.")
 				return False
-			
-			# Remove old ground plane
-			self.main_cell.remove(*new_gnd)
 			
 			# Get text objects
 			text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=self.layers['NbTiN'])
 			
 			# Subtract text from ground
 			for to in text_obj:
-				new_gnd = gdstk.boolean(new_gnd, text_obj, "not", layer=self.layers["GND"])
-			
-			# Replace ground plane in cell
-			for ng in new_gnd:
-				self.main_cell.add(ng)
+				self.gnd = gdstk.boolean(self.gnd, text_obj, "not", layer=self.layers["GND"])
 			
 		else:
 		
@@ -1570,27 +1557,14 @@ class ChipDesign:
 		
 		if self.graphics_on_gnd:
 			
-			# Get polygon
-			new_gnd = []
-			for poly in self.main_cell.polygons:
-				if poly.layer == self.layers['GND']:
-					new_gnd.append(poly)
-			
 			# Check ground plane was found
-			if len(new_gnd) < 1:
+			if len(self.gnd) < 1:
 				error("Failed to find ground plane. Cannot add graphic to ground plane.")
 				return False
 			
-			# Remove old ground plane
-			self.main_cell.remove(*new_gnd)
-			
 			# Subtract text from ground
 			for poly in all_polys:
-				new_gnd = gdstk.boolean(new_gnd, poly, "not", layer=self.layers["GND"])
-			
-			# Replace ground plane in cell
-			for ng in new_gnd:
-				self.main_cell.add(ng)
+				self.gnd = gdstk.boolean(self.gnd, poly, "not", layer=self.layers["GND"])
 				
 		else:
 			
