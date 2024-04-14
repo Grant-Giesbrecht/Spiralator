@@ -228,6 +228,70 @@ def render_text(text, size=None, position=(0, 0), font_path=None, tolerance=0.1,
 	
 	return PolyObjs
 
+class MultiChipDesign:
+	
+	def __init__(self, num_designs:int):
+		
+		# Basic parameters
+		self.chip_size_um = [] # Size of chip [x,y]
+		self.num_designs = num_designs # Number of designs to subsection chip
+		
+		# List of designs to position on subreticle
+		self.designs = []
+		
+		# GDSTK objects
+		self.lib = gdstk.Library()
+		self.main_cell = self.lib.new_cell("MAIN")
+		self.layers = {"NbTiN": 0, "Aluminum": 1, "Edges": 4, "aSi": 5, "GND": 6}
+	
+	def read_conf(self, filename:str):
+		
+		# Open json
+		try:
+			with open(os.path.join(filename)) as f:
+				file_data = json.load(f)
+		except Exception as e:
+			error(f"Failed to read file: {filename} ({e})")
+			return False
+		
+		# Add logger statement
+		info(f"Read file {filename}")
+		
+		# Assign to local variables
+		for k in file_data.keys():
+			setattr(self, k, file_data[k])
+			# fdk = file_data[k]
+			# debug(f"Writing value {MPrC}{fdk}{StdC} to variable <{MPrC}{k}{StdC}> {filename}")
+		
+		self.update()
+		
+		# Return
+		return True
+	
+	def add_design(self, new_design, rotation:float=None, translation:list=None):
+		
+		self.designs.append(new_design)
+		self.designs[-1].rotate(PI/2)
+	
+	def build(self):
+		
+		self.designs[0].translate(0, 5e3)
+		self.designs[2].translate(0, -5e3)
+	
+	def apply_objects(self):
+		
+		
+		for dsgn in self.designs:
+			dsgn.apply_objects(target_cell=self.main_cell)
+	
+	def write(self, filename:str):
+		
+		if DUMMY_MODE:
+			info(f"Skipping write GDS file >DUMMY_MODE<=>TRUE<.")
+		else:
+			self.lib.write_gds(filename)
+			info(f"Wrote GDS file {MPrC}'{filename}'{StdC}")
+
 class ChipDesign:
 	
 	def __init__(self):
@@ -261,7 +325,11 @@ class ChipDesign:
 		# Layout element objects
 		self.path = None
 		self.bulk = None
-		self.gnd = None
+		self.gnd = []
+		self.bond_pad_hole = []
+		self.Al_pad = []
+		self.io_line_list = []
+		self.text_obj_list = []
 		self.fiducials = []
 		self.temp_pads = [] # Stores bond pad dimensions. Not added to gdstk cell, but used to calculate aSi and gnd shapes.
 		
@@ -293,7 +361,7 @@ class ChipDesign:
 	
 	def read_conf(self, filename:str):
 		
-		# Open core.json
+		# Open json
 		try:
 			with open(os.path.join(filename)) as f:
 				file_data = json.load(f)
@@ -320,6 +388,141 @@ class ChipDesign:
 		#TODO: Implement
 		
 		self.update()
+	
+	def rotate(self, arg:float, center_point:list=[0,0]):
+		''' Rotates the chip design by the value arg, in radians. '''
+		
+		for f in self.fiducials:
+			f.rotate(arg, center_point)
+		
+		self.path.rotate(arg, center_point)
+		self.bulk.rotate(arg, center_point)
+		
+		# Add to object
+		for bph in self.bond_pad_hole:
+			bph.rotate(arg, center_point)
+		
+		# Add to cell
+		for alp in self.Al_pad:
+			alp.rotate(arg, center_point)
+		
+		# Add to cell
+		for g in self.gnd:
+			g.rotate(arg, center_point)
+		
+		# Add IO lines
+		for io_line in self.io_line_list:
+			io_line.rotate(arg, center_point)
+		
+		# Add text objects
+		for to in self.text_obj_list:
+			to.rotate(arg, center_point)
+	
+	def translate(self, move_x:float, move_y:float):
+		''' Translate the chip design by the value arg, in microns. '''
+		
+		for f in self.fiducials:
+			f.translate(move_x, move_y)
+		
+		self.path.translate(move_x, move_y)
+		self.bulk.translate(move_x, move_y)
+		
+		# Add to object
+		for bph in self.bond_pad_hole:
+			bph.translate(move_x, move_y)
+		
+		# Add to cell
+		for alp in self.Al_pad:
+			alp.translate(move_x, move_y)
+		
+		# Add to cell
+		for g in self.gnd:
+			g.translate(move_x, move_y)
+		
+		# Add IO lines
+		for io_line in self.io_line_list:
+			io_line.translate(move_x, move_y)
+		
+		# Add text objects
+		for to in self.text_obj_list:
+			to.translate(move_x, move_y)
+	
+	def apply_objects(self, target_cell=None):
+		''' Saves all objects to the cell '''
+		
+		if target_cell is None:
+			target_cell = self.main_cell
+		
+		# # This should be moved to build I think
+		# if self.NbTiN_is_etch:
+		# 	info(f"Inverting layers to calculate etch pattern.")
+		# 	inv_paths = gdstk.boolean(self.bulk, self.path, "not", layer=self.layers["NbTiN"])
+		# 	info(f"Adding etch layers (Inverted)")
+		# 	for ip in inv_paths:
+		# 		debug(f"Added path from inverted path list.")
+		# 		target_cell.add(ip)
+			
+		# 	warning("NbTiN is etch needs to be fully implemented!")
+			
+		# 	# TODO: Invert fiducials
+		# 	# TODO: Invert io components
+		# 	# TODO: Invert graphics
+		# else:
+		# 	info(f"Adding metal layers (Non-inverted)")
+			
+			
+			
+				
+		# 	if self.reticle_fiducial['on_gnd']:
+				
+		# 		# # Get polygon
+		# 		# new_gnd = []
+		# 		# for poly in target_cell.polygons:
+		# 		# 	if poly.layer == self.layers['GND']:
+		# 		# 		new_gnd.append(poly)
+				
+		# 		# # Check ground plane was found
+		# 		# if len(new_gnd) < 1:
+		# 		# 	error("Failed to find ground plane. Cannot add graphic to ground plane.")
+		# 		# 	return False
+				
+		# 		# # Remove old ground plane
+		# 		# target_cell.remove(*new_gnd)
+				
+		# 		# Subtract text from ground
+		# 		for f in self.fiducials:
+		# 			self.gnd = gdstk.boolean(self.gnd, f, "not", layer=self.layers["GND"])
+				
+		# 		# # Replace ground plane in cell
+		# 		# for ng in new_gnd:
+		# 		# 	target_cell.add(ng)
+				
+			
+		for f in self.fiducials:
+			target_cell.add(f)
+		
+		target_cell.add(self.path)
+		target_cell.add(self.bulk)
+		
+		# Add to object
+		for bph in self.bond_pad_hole:
+			target_cell.add(bph)
+		
+		# Add to cell
+		for ap in self.Al_pad:
+			target_cell.add(ap)
+		
+		# Add to cell
+		for g in self.gnd:
+			target_cell.add(g)
+		
+		# Add IO lines
+		for io_line in self.io_line_list:
+			target_cell.add(io_line)
+		
+		# Add text objects
+		for to in self.text_obj_list:
+			target_cell.add(to)
 	
 	def build(self):
 		""" Creates the chip design from the specifications. """
@@ -774,10 +977,7 @@ class ChipDesign:
 			tr = pad[1]
 			
 			# Create Rectangle
-			Al_pad = gdstk.rectangle( (bl[0], bl[1]), (tr[0], tr[1]), layer=self.layers['Aluminum'] )
-			
-			# Add to cell
-			self.main_cell.add(Al_pad)
+			self.Al_pad.append(gdstk.rectangle( (bl[0], bl[1]), (tr[0], tr[1]), layer=self.layers['Aluminum'] ))
 		
 		#TODO: Check file for if aSi is etch or releif
 		
@@ -797,11 +997,9 @@ class ChipDesign:
 				bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.io['aSi_etch']['x_buffer_um'], bl[1]+self.io['pads']['height_um']-self.io['pads']['pad_exposed_height_um']), (tr[0]+self.io['aSi_etch']['x_buffer_um'], tr[1]+self.io['aSi_etch']['extend_towards_edge_um'] ) )
 				
 			# Trim the rectangle so it doesn't extend over the edge of the chip
-			bond_pad_hole = gdstk.boolean(self.bulk, bond_pad_hole_positive, "and", layer=self.layers["aSi"])
-			
-			# Add to object
-			for bph in bond_pad_hole:
-				self.main_cell.add(bph)
+			new_bpl_list = gdstk.boolean(self.bulk, bond_pad_hole_positive, "and", layer=self.layers["aSi"])
+			for nbpl in new_bpl_list:
+				self.bond_pad_hole.append(nbpl)
 		
 		# Add groundplane layer
 		for pad in self.temp_pads:
@@ -853,58 +1051,84 @@ class ChipDesign:
 				return False
 			else:
 				self.gnd = gnd_list[0]
-				
-		# Add to cell
-		self.main_cell.add(self.gnd)
 		
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
 		
+		warning("Remember to run apply_objects() now that it isn't automatic in build().")
+		# if self.NbTiN_is_etch:
+		# 	info(f"Inverting layers to calculate etch pattern.")
+		# 	inv_paths = gdstk.boolean(self.bulk, self.path, "not", layer=self.layers["NbTiN"])
+		# 	info(f"Adding etch layers (Inverted)")
+		# 	for ip in inv_paths:
+		# 		debug(f"Added path from inverted path list.")
+		# 		self.main_cell.add(ip)
+			
+		# 	# TODO: Invert fiducials
+		# 	# TODO: Invert io components
+		# 	# TODO: Invert graphics
+		# else:
+		# 	info(f"Adding metal layers (Non-inverted)")
+		# 	self.main_cell.add(self.path)
+		# 	self.main_cell.add(self.bulk)
+			
+			
+				
+		# 	if self.reticle_fiducial['on_gnd']:
+		# 		# Get polygon
+		# 		new_gnd = []
+		# 		for poly in self.main_cell.polygons:
+		# 			if poly.layer == self.layers['GND']:
+		# 				new_gnd.append(poly)
+				
+		# 		# Check ground plane was found
+		# 		if len(new_gnd) < 1:
+		# 			error("Failed to find ground plane. Cannot add graphic to ground plane.")
+		# 			return False
+				
+		# 		# Remove old ground plane
+		# 		self.main_cell.remove(*new_gnd)
+				
+		# 		# Subtract text from ground
+		# 		for f in self.fiducials:
+		# 			new_gnd = gdstk.boolean(new_gnd, f, "not", layer=self.layers["GND"])
+				
+		# 		# Replace ground plane in cell
+		# 		for ng in new_gnd:
+		# 			self.main_cell.add(ng)
+				
+		# 	else:
+		# 		for f in self.fiducials:
+		# 			self.main_cell.add(f)
+		
+		# This should be moved to build I think
 		if self.NbTiN_is_etch:
 			info(f"Inverting layers to calculate etch pattern.")
 			inv_paths = gdstk.boolean(self.bulk, self.path, "not", layer=self.layers["NbTiN"])
 			info(f"Adding etch layers (Inverted)")
 			for ip in inv_paths:
 				debug(f"Added path from inverted path list.")
-				self.main_cell.add(ip)
+				
+				critical("Need to implement this! New version of 'target_cell.add(ip)'")
+				# target_cell.add(ip)
+			
+			warning("NbTiN is etch needs to be fully implemented!")
 			
 			# TODO: Invert fiducials
 			# TODO: Invert io components
 			# TODO: Invert graphics
 		else:
 			info(f"Adding metal layers (Non-inverted)")
-			self.main_cell.add(self.path)
-			self.main_cell.add(self.bulk)
 			
-			
-				
 			if self.reticle_fiducial['on_gnd']:
-				# Get polygon
-				new_gnd = []
-				for poly in self.main_cell.polygons:
-					if poly.layer == self.layers['GND']:
-						new_gnd.append(poly)
-				
-				# Check ground plane was found
-				if len(new_gnd) < 1:
-					error("Failed to find ground plane. Cannot add graphic to ground plane.")
-					return False
-				
-				# Remove old ground plane
-				self.main_cell.remove(*new_gnd)
 				
 				# Subtract text from ground
 				for f in self.fiducials:
-					new_gnd = gdstk.boolean(new_gnd, f, "not", layer=self.layers["GND"])
+					self.gnd = gdstk.boolean(self.gnd, f, "not", layer=self.layers["GND"])
 				
-				# Replace ground plane in cell
-				for ng in new_gnd:
-					self.main_cell.add(ng)
-				
-			else:
-				for f in self.fiducials:
-					self.main_cell.add(f)
-
+				# Clear fiducial list
+				self.fiducials = []
+	
 		return True
 	
 	def calc_taper_width(self, z:float):
@@ -1240,8 +1464,9 @@ class ChipDesign:
 			
 			io_line.segment(pt, w)
 		
-		# Add objects to chip design
-		self.main_cell.add(io_line)
+		self.io_line_list.append(io_line)
+		
+		print(self.io_line_list)
 		
 		taper_length = self.io['taper']['length_um']
 		info(f"Total meandered line length: >{rd(dist)}< um, Taper length: >{rd(taper_length)}<.")
@@ -1290,7 +1515,7 @@ class ChipDesign:
 			
 			# Write to design
 			for to in text_obj:
-				self.main_cell.add(to)
+				self.text_object_list.append(to)
 	
 	def insert_graphic(self, position:list, gds_filename:str, width_um:float=-1, read_layer:int=1, read_datatype:int=0, write_layer:int=None, write_datatype:int=None):
 		''' Accepts a GDS file and applies the graphic to the chip. '''

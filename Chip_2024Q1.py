@@ -4,8 +4,6 @@ chip = ChipDesign()
 
 chip.read_conf(os.path.join("designs", "C2024Q1_AusfC.json"))
 
-# chip.add_design(os.path.join("graphics", "nist.gds"), [100, -1])
-
 chip.build()
 
 futura = os.path.join("assets", "futura", "futura medium bt.ttf")
@@ -24,4 +22,5 @@ chip.insert_text((600, baseline+line_gap+text_size), f"UNLOADED | W = 3 um", sel
 chip.insert_graphic((1600, -3600), os.path.join("assets", "graphics", "CU.gds"), 350)
 chip.insert_graphic((1000, -4000), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)
 
+chip.apply_objects()
 chip.write(os.path.join("GDS", "Chip_2024Q1.gds"))
