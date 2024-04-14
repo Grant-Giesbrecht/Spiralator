@@ -268,15 +268,27 @@ class MultiChipDesign:
 		# Return
 		return True
 	
-	def add_design(self, new_design, rotation:float=None, translation:list=None):
+	def add_design(self, new_design, rotation:float=None, translation:list=None, rotation_center:list=[0,0]):
+		''' Adds a design to the multichip and applies a rotation (degrees) and 
+		translation (um).'''
 		
+		# Add design to list
 		self.designs.append(new_design)
-		self.designs[-1].rotate(PI/2)
+		
+		# Rotate design
+		if rotation is not None:
+			
+			rotation = rotation * 3.1415926535 / 180
+			
+			self.designs[-1].rotate(rotation, rotation_center)
+		
+		# Translate design
+		if translation is not None:
+			self.designs[-1].translate(translation[0], translation[1])
 	
 	def build(self):
 		
-		self.designs[0].translate(0, 5e3)
-		self.designs[2].translate(0, -5e3)
+		pass
 	
 	def apply_objects(self):
 		
@@ -1055,7 +1067,7 @@ class ChipDesign:
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
 		
-		warning("Remember to run apply_objects() now that it isn't automatic in build().")
+		# warning("Remember to run apply_objects() now that it isn't automatic in build().")
 		# if self.NbTiN_is_etch:
 		# 	info(f"Inverting layers to calculate etch pattern.")
 		# 	inv_paths = gdstk.boolean(self.bulk, self.path, "not", layer=self.layers["NbTiN"])

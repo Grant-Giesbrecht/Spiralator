@@ -57,9 +57,9 @@ chip_d3.insert_graphic((1000, -4000), os.path.join("assets", "graphics", "NIST.g
 chip_meister = MultiChipDesign(3)
 
 chip_meister.read_conf("Multi_2024Q1.json")
-chip_meister.add_design(chip_d1, 1)
-chip_meister.add_design(chip_d2, 2)
-chip_meister.add_design(chip_d3, 3)
+chip_meister.add_design(chip_d1, rotation=90, translation=[0, 5e3])
+chip_meister.add_design(chip_d2, rotation=90, translation=[0, 0])
+chip_meister.add_design(chip_d3, rotation=90, translation=[0, -5e3])
 
 chip_meister.build()
 chip_meister.apply_objects()
