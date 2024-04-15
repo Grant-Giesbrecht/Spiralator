@@ -64,4 +64,4 @@ chip_meister.add_design(chip_d3, rotation=90, translation=[0, -5e3])
 chip_meister.build()
 chip_meister.apply_objects()
 
-chip_meister.write(os.path.join("GDS", "MultiChip_2024Q1.gds"))
+chip_meister.write(os.path.join("GDS", "MultiChip_test.gds"))

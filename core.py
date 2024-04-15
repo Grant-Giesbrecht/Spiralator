@@ -939,7 +939,7 @@ class ChipDesign:
 		
 		# Invert selection if color is etch
 		self.bulk = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
-		self.gnd = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
+		self.gnd.append(gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges']))
 		
 		# ---------------------------------------------------------------------
 		# Build IO structures (meandered lines and bond pads)
@@ -967,17 +967,21 @@ class ChipDesign:
 			l_fid = self.reticle_fiducial['length_um']
 			w_fid = self.reticle_fiducial['width_um']
 			
-			self.fiducials.append(gdstk.rectangle( (x_left, y_up-l_fid), (x_left+w_fid, y_up), layer=self.layers["NbTiN"]) )
-			self.fiducials.append(gdstk.rectangle( (x_left, y_up-w_fid), (x_left+l_fid, y_up), layer=self.layers["NbTiN"]) )
+			if 1 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_left, y_up-l_fid), (x_left+w_fid, y_up), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_left, y_up-w_fid), (x_left+l_fid, y_up), layer=self.layers["NbTiN"]) )
 			
-			self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+w_fid, y_down+l_fid), layer=self.layers["NbTiN"]) )
-			self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+l_fid, y_down+w_fid ), layer=self.layers["NbTiN"]) )
+			if 2 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+w_fid, y_down+l_fid), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+l_fid, y_down+w_fid ), layer=self.layers["NbTiN"]) )
 			
-			self.fiducials.append(gdstk.rectangle( (x_right, y_down ), (x_right-w_fid, y_down+l_fid ), layer=self.layers["NbTiN"]) )
-			self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_down ), (x_right, y_down+w_fid), layer=self.layers["NbTiN"]) )
+			if 3 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_right, y_down ), (x_right-w_fid, y_down+l_fid ), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_down ), (x_right, y_down+w_fid), layer=self.layers["NbTiN"]) )
 			
-			self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_up-w_fid ), (x_right, y_up ), layer=self.layers["NbTiN"]) )
-			self.fiducials.append(gdstk.rectangle( (x_right-w_fid, y_up ), (x_right, y_up-l_fid ), layer=self.layers["NbTiN"]) )
+			if 4 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_up-w_fid ), (x_right, y_up ), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_right-w_fid, y_up ), (x_right, y_up-l_fid ), layer=self.layers["NbTiN"]) )
 		
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
@@ -1057,13 +1061,14 @@ class ChipDesign:
 			# Trim the rectangle so it doesn't extend over the edge of the chip
 			gnd_list = gdstk.boolean(self.gnd, bond_pad_hole_positive, "not", layer=self.layers["GND"])
 			
-			# Unpack list to single object
-			if len(gnd_list) != 1:
-				error("Failed to generate ground plane")
-				return False
-			else:
-				self.gnd = gnd_list[0]
-		
+			# # Unpack list to single object
+			# if len(gnd_list) != 1:
+			# 	error("Failed to generate ground plane")
+			# 	return False
+			# else:
+			# 	self.gnd = gnd_list[0]
+			self.gnd = gnd_list
+			
 		# ---------------------------------------------------------------------
 		# Add objects to chip design
 		
@@ -1477,8 +1482,6 @@ class ChipDesign:
 			io_line.segment(pt, w)
 		
 		self.io_line_list.append(io_line)
-		
-		print(self.io_line_list)
 		
 		taper_length = self.io['taper']['length_um']
 		info(f"Total meandered line length: >{rd(dist)}< um, Taper length: >{rd(taper_length)}<.")
