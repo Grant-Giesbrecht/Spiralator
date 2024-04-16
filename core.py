@@ -1489,7 +1489,7 @@ class ChipDesign:
 		if dist < taper_length:
 			warning("Meandered line length is less than taper length! Sharp edge present.")
 	
-	def insert_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None):
+	def insert_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None, center_justify:bool=False):
 		''' Inserts custom text to the chip. Can use any TrueType font (rather than just the default supplied with gdstk). '''
 		
 		if self.graphics_on_gnd:
@@ -1501,6 +1501,29 @@ class ChipDesign:
 			
 			# Get text objects
 			text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=self.layers['NbTiN'])
+			
+			# Center Justify
+			if center_justify:
+				
+				# Get bounding box
+				min_x, max_x = None, None
+				for to in text_obj:
+					
+					bb = to.bounding_box()
+					
+					if min_x is None or bb[0][0] < min_x:
+						min_x = bb[0][0]
+					
+					if max_x is None or bb[1][0] > max_x:
+						max_x = bb[1][0]
+				
+				# update position
+				text_width = max_x - min_x
+				position = (position[0] - text_width/2, position[1])
+				
+				# Re-render text
+				text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=self.layers['NbTiN'])
+				
 			
 			# Subtract text from ground
 			for to in text_obj:
