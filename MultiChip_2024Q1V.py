@@ -17,12 +17,18 @@ chip_d1 = ChipDesign()
 chip_d1.read_conf(os.path.join("designs", "MC-2024Q1V-D1-AusfA.json"))
 chip_d1.build()
 
+chip_d1.insert_text((0, -4000+line_gap+text_size), "LENGTH", selected_font, text_size, center_justify=True)
+chip_d1.insert_text((0, -4000), f"4.1 mm", selected_font, text_size, center_justify=True)
+
 ##---------------------------- Design 2 ---------------------------------
 
 # Create first chip design
 chip_d2 = ChipDesign()
 chip_d2.read_conf(os.path.join("designs", "MC-2024Q1V-D2-AusfA.json"))
 chip_d2.build()
+
+chip_d2.insert_text((0, -4000+line_gap+text_size), "LENGTH", selected_font, text_size, center_justify=True)
+chip_d2.insert_text((0, -4000), f"43.1 mm", selected_font, text_size, center_justify=True)
 
 ##---------------------------- Design 3 ---------------------------------
 
@@ -31,27 +37,17 @@ chip_d3 = ChipDesign()
 chip_d3.read_conf(os.path.join("designs", "MC-2024Q1V-D3-AusfA.json"))
 chip_d3.build()
 
-# Add first chip graphics
-# text_size = 125
-# line_gap = 35
-# baseline = -4800
-# justify_line = -1600
-
 text_size = 125
 line_gap = 35
 baseline = 3500
 justify_line = -1600
 
-# chip_d3.insert_text((justify_line, baseline+line_gap*3+3*text_size), "C-2024-A", selected_font, text_size)
-# chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), "FREQUENCY CONVERTER", selected_font, text_size)
-# chip_d3.insert_text((justify_line, baseline+line_gap+text_size), f"UNLOADED | W = 3 um", selected_font, text_size)
+chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), "C-2024-A", selected_font, text_size)
+chip_d3.insert_text((justify_line, baseline+line_gap+text_size), "FREQUENCY CONVERTER", selected_font, text_size)
+chip_d3.insert_text((justify_line, baseline), "WIDTH = 3 um", selected_font, text_size)
 
-# chip_d3.insert_graphic((600, -4800), os.path.join("assets", "graphics", "CU.gds"), 350)
-# chip_d3.insert_graphic((-1600, -4800), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)
-
-chip_d3.insert_text((justify_line, baseline+line_gap*3+3*text_size), "C-2024-A", selected_font, text_size)
-chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), "FREQUENCY CONVERTER", selected_font, text_size)
-chip_d3.insert_text((justify_line, baseline+line_gap+text_size), f"UNLOADED | W = 3 um", selected_font, text_size)
+chip_d3.insert_text((0, -4000+line_gap+text_size), "LENGTH", selected_font, text_size, center_justify=True)
+chip_d3.insert_text((0, -4000), f"454.6 mm", selected_font, text_size, center_justify=True)
 
 chip_d3.insert_graphic((600, -4800), os.path.join("assets", "graphics", "CU.gds"), 350)
 chip_d3.insert_graphic((600, -4300), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)

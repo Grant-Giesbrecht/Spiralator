@@ -539,6 +539,572 @@ class ChipDesign:
 	def build(self):
 		""" Creates the chip design from the specifications. """
 		
+		if self.spiral['num_rotations'] == 0:
+			self.build_through()
+		else:
+			self.build_standard()
+	
+	def build_through(self):
+		''' Builds the chip with no spiral rotations'''
+		
+		# ---------------------------------------------------------------------
+		# Build spiral
+		
+		info("Building chip")
+		
+		# Basic error checking
+		if self.io['same_side'] and (self.io['outer']['y_line_offset_um'] >= self.io['inner']['y_line_offset_um']):
+			error("Inner IO structure must have higher y-offset than outer. Cannot build chip.")
+			return False
+		
+		if self.io['same_side'] and (self.io['outer']['y_line_offset_um']+self.io['pads']['taper_width_um']+20 >= self.io['inner']['y_line_offset_um']):
+			warning("Inner and outer IO structures are detected to be close. Please verify this is desired.")
+			
+		
+		if self.io['same_side'] and (self.io['outer']['x_pad_offset_um'] + self.io['pads']['width_um'] + 100 >= self.io['inner']['x_pad_offset_um']):
+			warning("Inner and outer bond pads are detected to be close. Please verify this is desired.")
+		
+		
+		# spiral_num = self.spiral['num_rotations']//2
+		# spiral_b = self.spiral['spacing_um']/PI
+		# spiral_rot_offset = PI # Rotate the entire spiral this many radians
+		# center_circ_diameter = self.reversal['diameter_um']
+		# circ_num_pts = self.reversal['num_points']//2
+		
+		# # Make path for 1-direction of spiral (Polar)
+		# theta1 = np.linspace(spiral_rot_offset, spiral_rot_offset+2*PI*spiral_num, self.spiral["num_points"]//2)
+		# R1 = (theta1-spiral_rot_offset)*spiral_b + center_circ_diameter
+		
+		# if self.io['same_side']:
+		# 	# Make path for other direction of spiral (Polar) (add half rotation so end on same side)
+		# 	theta2 = np.linspace(spiral_rot_offset, spiral_rot_offset+2*PI*(spiral_num+0.5), round(self.spiral["num_points"]/2*(spiral_num+0.5)/spiral_num))
+		# 	R2 = (theta2-spiral_rot_offset)*spiral_b + center_circ_diameter
+		# else:
+		# 	# Make path for other direction of spiral (Polar)
+		# 	theta2 = np.linspace(spiral_rot_offset, spiral_rot_offset+2*PI*(spiral_num), round(self.spiral["num_points"]/2*(spiral_num+0.5)/spiral_num))
+		# 	R2 = (theta2-spiral_rot_offset)*spiral_b + center_circ_diameter
+			
+		# # Convert spirals to cartesian
+		# X1 = R1*np.cos(theta1)
+		# Y1 = R1*np.sin(theta1)
+		# X2 = -1*R2*np.cos(theta2)
+		# Y2 = -1*R2*np.sin(theta2)
+		
+		### Select spiral Y-offset/ Check fits on wafer ------------
+		#
+		
+		# if self.io['same_side']:
+		
+		# 	# Get X and Y bounds
+		# 	allYs = list(Y1)+list(Y2)
+		# 	allXs = list(X1)+list(X2)
+		# 	y_max = np.max(allYs)
+		# 	y_min = np.min(allYs)
+		# 	x_max = np.max(allXs)
+		# 	x_min = np.min(allXs)
+		# 	dY = y_max - y_min
+		# 	dX = x_max - x_min
+		# 	upper_bound = self.chip_size_um[1]/2
+		# 	lower_bound = -self.chip_size_um[1]/2 + self.io['inner']['y_line_offset_um'] + self.pad_height
+			
+		# 	# Check fit
+		# 	allowed_size = upper_bound - lower_bound - self.spiral_io_buffer_um - self.chip_edge_buffer_um
+		# 	if dY > allowed_size:
+		# 		error(f"Cannot fit spiral in Y-dimension. Spiral height >{dY} um< \\> allowed region >{allowed_size} um<.")
+		# 		return False
+			
+		# 	# Get height from bottom
+		# 	spiral_y_offset = lower_bound + self.spiral_io_buffer_um + (allowed_size - dY)/2 + abs(y_min)
+		# 	debug(f"Selected spiral Y offset of >{spiral_y_offset} um<.")
+		# 	debug(f"Spiral lower margin: >{self.spiral_io_buffer_um+(allowed_size-dY)/2} um<.")
+		# 	debug(f"Spiral upper margin: >{self.chip_edge_buffer_um+(allowed_size-dY)/2} um<.")
+		
+		# else:
+			
+		# 	# Get X and Y bounds
+		# 	allYs = list(Y1)+list(Y2)
+		# 	allXs = list(X1)+list(X2)
+		# 	y_max = np.max(allYs)
+		# 	y_min = np.min(allYs)
+		# 	x_max = np.max(allXs)
+		# 	x_min = np.min(allXs)
+		# 	dY = y_max - y_min
+		# 	dX = x_max - x_min
+		# 	upper_bound = self.chip_size_um[1]/2 - self.io['outer']['y_line_offset_um'] - self.pad_height
+		# 	lower_bound = -self.chip_size_um[1]/2 + self.io['inner']['y_line_offset_um'] + self.pad_height
+			
+		# 	# Check fit
+		# 	allowed_size = upper_bound - lower_bound - self.spiral_io_buffer_um - self.chip_edge_buffer_um
+		# 	if dY > allowed_size:
+		# 		error(f"Cannot fit spiral in Y-dimension. Spiral height >{dY} um< \\> allowed region >{allowed_size} um<.")
+		# 		return False
+			
+		# 	# Get height from bottom
+		# 	spiral_y_offset = lower_bound + self.spiral_io_buffer_um + (allowed_size - dY)/2 + abs(y_min)
+		# 	debug(f"Selected spiral Y offset of >{spiral_y_offset} um<.")
+		# 	debug(f"Spiral lower margin: >{self.spiral_io_buffer_um+(allowed_size-dY)/2} um<.")
+		# 	debug(f"Spiral upper margin: >{self.chip_edge_buffer_um+(allowed_size-dY)/2} um<.")
+		
+		#TODO: Check X placement
+		
+		#
+		#### End choose spiral position --------------------
+		
+		# # Add in spiral reversals
+		# if self.reversal['mode'].upper() == "CIRCLE": # Use circles to reverse direction
+		
+		# 	# Create center circles
+		# 	theta_circ1 = np.linspace(0, PI, circ_num_pts)
+		# 	theta_circ2 = np.linspace(PI, 2*PI, circ_num_pts)
+			
+		# 	# Convert circles to cartesian
+		# 	Xc1 = center_circ_diameter/2*np.cos(theta_circ1)-center_circ_diameter/2
+		# 	Yc1 = center_circ_diameter/2*np.sin(theta_circ1)
+		# 	Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
+		# 	Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
+			
+		# 	# Change format
+		# 	path_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X1, Y1)]
+		# 	path_list1.reverse()
+		# 	path_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X2, Y2)]
+		# 	circ_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc1, Yc1)]
+		# 	circ_list1.reverse()
+		# 	circ_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc2, Yc2)]
+			
+		# 	# Add tails so there are no gaps when connecting to IO components
+		# 	tail_1 = [[path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um']]]
+		# 	if self.io['same_side']:
+		# 		tail_2 = [[path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um']]]
+		# 	else:
+		# 		tail_2 = [[path_list2[-1][0], path_list2[-1][1]+self.spiral['tail_length_um']]]
+			
+		# 	# Union all components
+		# 	path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
+		
+		# elif self.reversal['mode'].upper() == "CIRCLE_SMOOTH": # Use circles with a straight-shot into the circle to prevent sharp angles
+			
+		# 	# Change format
+		# 	path_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X1, Y1)]
+		# 	path_list1.reverse()
+		# 	path_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(X2, Y2)]
+			
+			
+		# 	# Add tails so there are no gaps when connecting to IO components
+		# 	tail_1 = [[path_list1[0][0], path_list1[0][1]-self.spiral['tail_length_um']]]
+		# 	if self.io['same_side']:
+		# 		tail_2 = [[path_list2[-1][0], path_list2[-1][1]-self.spiral['tail_length_um']]]
+		# 	else:
+		# 		tail_2 = [[path_list2[-1][0], path_list2[-1][1]+self.spiral['tail_length_um']]]
+			
+		# 	# On inner most spirals, find where tangent is vertical. Stop spiral and extend ---------
+		# 	# vertically so it matches smoothly with the circle reversal caps:
+			
+		# 	# Find start point for path1
+		# 	last_x1 = None
+		# 	idx_x1 = None
+		# 	for idx, coord in enumerate(reversed(path_list1)):
+				
+		# 		# Initilize
+		# 		if idx == 0:
+		# 			last_x1 = coord[0]
+		# 			continue
+				
+		# 		# Find where x-direction reverses
+		# 		if coord[0] >= last_x1:
+		# 			idx_x1 = idx
+		# 			break
+		# 		else:
+		# 			last_x1 = coord[0]
+				
+			
+		# 	# Modify spiral path
+		# 	final_y = path_list1[-1][1]
+		# 	path_list1 = path_list1[0:-idx_x1]
+		# 	path_list1.append([last_x1, final_y])
+			
+		# 	# Find start point for path1
+		# 	last_x2 = None
+		# 	idx_x2 = None
+		# 	for idx, coord in enumerate(path_list2):
+				
+		# 		# Initilize
+		# 		if idx == 0:
+		# 			last_x2 = coord[0]
+		# 			continue
+				
+		# 		# Find where x-direction reverses
+		# 		if coord[0] <= last_x2:
+		# 			idx_x2 = idx
+		# 			break
+		# 		else:
+		# 			last_x2 = coord[0]
+			
+		# 	# Modify spiral path
+		# 	final_y = path_list2[0][1]
+		# 	path_list2 = path_list2[idx_x2:]
+		# 	path_list2.insert(0, [last_x2, final_y])
+			
+		# 	# Modify diameter to match spirals
+		# 	center_circ_diameter = abs(last_x1)
+			
+		# 	# End trim spiral inners --------------------
+			
+		# 	# Create center circles
+		# 	theta_circ1 = np.linspace(0, PI, circ_num_pts)
+		# 	theta_circ2 = np.linspace(PI, 2*PI, circ_num_pts)
+			
+		# 	# Convert circles to cartesian
+		# 	Xc1 = center_circ_diameter/2*np.cos(theta_circ1)-center_circ_diameter/2
+		# 	Yc1 = center_circ_diameter/2*np.sin(theta_circ1)
+		# 	Xc2 = center_circ_diameter/2*np.cos(theta_circ2)+center_circ_diameter/2
+		# 	Yc2 = center_circ_diameter/2*np.sin(theta_circ2)
+			
+		# 	circ_list1 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc1, Yc1)]
+		# 	circ_list1.reverse()
+		# 	circ_list2 = [[x_, y_+spiral_y_offset] for x_, y_ in zip(Xc2, Yc2)]
+			
+		# 	# Union all components
+		# 	path_list = tail_1 + path_list1 + circ_list1 + circ_list2 + path_list2 + tail_2
+		
+		#### Extend spiral with straight regions as specified --------------------
+		#
+		
+		# # Shift everything down and to the left by half
+		# for pl in path_list:
+		# 	pl[0] -= self.spiral['horiz_stretch_um']//2
+		# 	pl[1] -= self.spiral['vert_stretch_um']//2
+		
+		#///////////// Perform vertical stretching //////////////////
+		
+		# Initialize, find when dX changes sign
+		# last_sdX = 0
+		
+		# idx_reversal_pt = len(tail_1) + len(path_list1) + len(circ_list1)
+		# idx_horiz_lock = len(tail_1) + len(path_list1)
+		# idx_horiz_unlock = len(tail_1) + len(path_list1) + len(circ_list1) + len(circ_list2)
+		
+		# # Scan over all points
+		# idx = 0
+		# while True:
+		# 	idx += 1
+			
+		# 	# Check for end condition
+		# 	if idx >= len(path_list):
+		# 		break
+			
+		# 	# If dX is zero, skip point
+		# 	if path_list[idx][0] - path_list[idx-1][0] == 0:
+		# 		sdX = last_sdX
+		# 	else:
+		# 		# Get sign of dX
+		# 		sdX = (path_list[idx][0] - path_list[idx-1][0])/abs(path_list[idx][0] - path_list[idx-1][0] )
+			
+		# 	# Check for change
+		# 	if (last_sdX != sdX) or (idx == idx_reversal_pt):
+		# 		# Change occured
+				
+		# 		# Duplicate last point
+		# 		path_list.insert(idx, [path_list[idx-1][0], path_list[idx-1][1]])
+				
+		# 		# Get sign of Y change
+		# 		dY = (path_list[idx][1]-path_list[idx-1][1])
+		# 		sign_incr = 1
+		# 		while abs(dY) < 0.1:
+		# 			sign_incr += 1
+		# 			dY = (path_list[idx][1]-path_list[idx-sign_incr][1])
+		# 			if sign_incr >= 10:
+		# 				logging.error("Failed to identify change in direction while extending spiral.")
+		# 				return False
+		# 		sign_val = dY/abs(dY)
+				
+		# 		# print(f"dY sign = {sign_val}, |dY| = {abs(dY)}")
+				
+		# 		# Shift all remaining points up/down
+		# 		for si in range(idx, len(path_list)):
+					
+		# 			# Modify Y values
+		# 			path_list[si][1] += self.spiral['vert_stretch_um'] * sign_val
+				
+		# 		# Increment index to account for added point
+		# 		idx += 1
+		# 		if idx < idx_reversal_pt:
+		# 			idx_reversal_pt += 1
+		# 		if idx < idx_horiz_lock:
+		# 			idx_horiz_lock += 1
+		# 		if idx < idx_horiz_unlock:
+		# 			idx_horiz_unlock += 1
+				
+				
+		# 		# Update last_sdX
+		# 		last_sdX = sdX
+		
+		# #///////////// Perform horizontal stretching //////////////////
+		
+		# # Get sign of last dY change
+		# sign_incr = 1
+		# last_sdY = (path_list[sign_incr][1]-path_list[0][1])
+		# while abs(last_sdY) < 0.1:
+		# 	sign_incr += 1
+		# 	last_sdY = (path_list[sign_incr][1]-path_list[0][1])
+		# 	if sign_incr >= 10:
+		# 		logging.error("Failed to identify change in direction while extending spiral.")
+		# 		return False
+		# last_sdY = last_sdY/abs(last_sdY)
+		
+		# # path_list.reverse()
+		
+		# # Scan over all points
+		# idx = 0
+		# while True:
+		# 	idx += 1
+			
+		# 	# Check for end condition
+		# 	if idx >= len(path_list):
+		# 		break
+			
+		# 	# If dY is zero, skip point
+		# 	if abs(path_list[idx][1] - path_list[idx-1][1]) < 0.01:
+		# 		sdY = last_sdY
+		# 	else:
+				
+		# 		# # Get sign of last dY change
+		# 		# sign_incr = 0
+		# 		# sdY = (path_list[idx+sign_incr][1]-path_list[idx][1])
+		# 		# while abs(sdY) < 0.1:
+		# 		# 	sign_incr += 1
+		# 		# 	sdY = (path_list[idx+sign_incr][1]-path_list[idx-1][1])
+		# 		# 	if sign_incr >= 10:
+		# 		# 		logging.error("Failed to identify change in direction while extending spiral.")
+		# 		# 		return False
+		# 		# sdY = sdY/abs(sdY)
+				
+		# 		# Get sign of dY
+		# 		sdY = (path_list[idx][1] - path_list[idx-1][1])/abs(path_list[idx][1] - path_list[idx-1][1])
+			
+		# 	# Check for change
+		# 	if (last_sdY != sdY):
+		# 		# Change occured
+				
+		# 		# Duplicate last point
+		# 		path_list.insert(idx, [path_list[idx-1][0], path_list[idx-1][1]])
+				
+		# 		# Get sign of X change
+		# 		dX = (path_list[idx][0]-path_list[idx-1][0])
+		# 		sign_incr = 1
+		# 		while abs(dX) < 0.1:
+		# 			sign_incr += 1
+		# 			dX = (path_list[idx][0]-path_list[idx-sign_incr][0])
+		# 			if sign_incr >= 10:
+		# 				logging.error("Failed to identify change in direction while extending spiral.")
+		# 				return False
+		# 		sign_val = dX/abs(dX)
+				
+		# 		# For center reversals, divide delta evenly
+		# 		if idx > idx_horiz_lock and idx < idx_horiz_unlock:
+		# 			sign_val /= 2
+				
+		# 		# Shift all remaining points up/down
+		# 		for si in range(idx, len(path_list)):
+					
+		# 			# Modify X values
+		# 			path_list[si][0] += self.spiral['horiz_stretch_um'] * sign_val
+				
+		# 		# Increment index to account for added point
+		# 		idx += 1
+		# 		if idx < idx_reversal_pt:
+		# 			idx_reversal_pt += 1
+		# 		if idx < idx_horiz_lock:
+		# 			idx_horiz_lock += 1
+		# 		if idx < idx_horiz_unlock:
+		# 			idx_horiz_unlock += 1
+				
+		# 		# Update last_sdX
+		# 		last_sdY = sdY
+		
+		#
+		##### End extend spirals -----------------------------------
+		
+		path_list = [[self.io['outer']['x_pad_offset_um']-self.chip_size_um[0]/2,0]]
+		
+		# Calcualte total length of spiral
+		last_point = None
+		spiral_length = 0
+		for pt in path_list:
+			
+			# Initialize
+			if last_point is None:
+				last_point = pt
+				continue
+			
+			# Otherwise add delta
+			spiral_length += np.sqrt((pt[0] - last_point[0])**2 + (pt[1] - last_point[1])**2)
+			last_point = pt
+		
+		info(f"Total spiral length: >{spiral_length} um<.")
+		
+		# Create FlexPath object for pattern
+		self.path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
+		
+		# Invert selection if color is etch
+		self.bulk = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
+		self.gnd.append(gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges']))
+		
+		# ---------------------------------------------------------------------
+		# Build IO structures (meandered lines and bond pads)
+		
+		# Meander outer line: starts at (X2 and Y2)
+		if self.io['same_side']:
+			self.build_io_component(path_list[-1], self.io['outer'], no_bends=True)
+		else:
+			self.build_io_component(path_list[-1], self.io['outer'], use_alt_side=True, no_bends=True)
+		
+		# Meander inner line
+		self.build_io_component(path_list[0], self.io['inner'], no_bends=True)
+		
+		# ---------------------------------------------------------------------
+		# Build IO structures (meandered lines and bond pads)
+		
+		if self.reticle_fiducial['type'].upper() == "L_CORNER":
+			
+			# Define local coordinates
+			x_right = self.chip_size_um[0]//2
+			x_left = -1*x_right
+			y_up = self.chip_size_um[1]//2
+			y_down = -1*y_up
+			
+			l_fid = self.reticle_fiducial['length_um']
+			w_fid = self.reticle_fiducial['width_um']
+			
+			if 1 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_left, y_up-l_fid), (x_left+w_fid, y_up), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_left, y_up-w_fid), (x_left+l_fid, y_up), layer=self.layers["NbTiN"]) )
+			
+			if 2 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+w_fid, y_down+l_fid), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_left, y_down ), (x_left+l_fid, y_down+w_fid ), layer=self.layers["NbTiN"]) )
+			
+			if 3 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_right, y_down ), (x_right-w_fid, y_down+l_fid ), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_down ), (x_right, y_down+w_fid), layer=self.layers["NbTiN"]) )
+			
+			if 4 in self.reticle_fiducial['corners']:
+				self.fiducials.append(gdstk.rectangle( (x_right-l_fid, y_up-w_fid ), (x_right, y_up ), layer=self.layers["NbTiN"]) )
+				self.fiducials.append(gdstk.rectangle( (x_right-w_fid, y_up ), (x_right, y_up-l_fid ), layer=self.layers["NbTiN"]) )
+		
+		# ---------------------------------------------------------------------
+		# Add objects to chip design
+		
+		# Add Al layer
+		for pad in self.temp_pads:
+			
+			bl = pad[0]
+			tr = pad[1]
+			
+			# Create Rectangle
+			self.Al_pad.append(gdstk.rectangle( (bl[0], bl[1]), (tr[0], tr[1]), layer=self.layers['Aluminum'] ))
+		
+		#TODO: Check file for if aSi is etch or releif
+		
+		# Add aSi etch layer
+		for pad in self.temp_pads:
+			
+			bl = pad[0]
+			tr = pad[1]
+			
+			# Get direction towards edge of chip (ie. is this bond pad above or below origin)
+			edge_direction = np.sign(bl[1])
+			
+			# Create Rectangle
+			if edge_direction < 0: # Pad on bottom of chip
+				bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.io['aSi_etch']['x_buffer_um'], bl[1]-self.io['aSi_etch']['extend_towards_edge_um']), (tr[0]+self.io['aSi_etch']['x_buffer_um'], tr[1]-self.io['pads']['height_um']+self.io['pads']['pad_exposed_height_um']) )
+			else:
+				bond_pad_hole_positive = gdstk.rectangle( (bl[0]-self.io['aSi_etch']['x_buffer_um'], bl[1]+self.io['pads']['height_um']-self.io['pads']['pad_exposed_height_um']), (tr[0]+self.io['aSi_etch']['x_buffer_um'], tr[1]+self.io['aSi_etch']['extend_towards_edge_um'] ) )
+				
+			# Trim the rectangle so it doesn't extend over the edge of the chip
+			new_bpl_list = gdstk.boolean(self.bulk, bond_pad_hole_positive, "and", layer=self.layers["aSi"])
+			for nbpl in new_bpl_list:
+				self.bond_pad_hole.append(nbpl)
+		
+		# Add groundplane layer
+		for pad in self.temp_pads:
+			
+			bl = pad[0]
+			tr = pad[1]
+			
+			# Get offset parameters
+			baseline_offset = self.chip_size_um[1]//2 # Offset to translate (y = 0) to actual bottom of chip
+			just_offset = self.chip_size_um[0]//2 # Offset to translate (x = 0) to actual left side of chip
+			
+			# Get direction towards edge of chip (ie. is this bond pad above or below origin)
+			edge_direction = np.sign(bl[1])
+			
+			# Create Rectangle
+			if edge_direction < 0: # Pad on bottom of chip
+				bond_pad_hole_positive = gdstk.FlexPath((bl[0]+self.io['pads']['width_um']/2, -baseline_offset-10), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				bond_pad_hole_positive.segment((tr[0]-self.io['pads']['width_um']/2, tr[1]), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				
+				# Loop over each section of CPW taper and add it
+				last_height = tr[1]
+				for idx, seg_l in enumerate(self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+					
+					seg_w = self.io['faux_cpw_taper']['cpw_widths_um'][idx]
+					seg_g = self.io['faux_cpw_taper']['cpw_gaps_um'][idx]
+					
+					last_height += seg_l
+					bond_pad_hole_positive.segment((tr[0]-self.io['pads']['width_um']/2, last_height), seg_w+seg_g*2)
+			else:
+				bond_pad_hole_positive = gdstk.FlexPath((tr[0]-self.io['pads']['width_um']/2, baseline_offset+10), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				bond_pad_hole_positive.segment((bl[0]+self.io['pads']['width_um']/2, bl[1]), self.io['pads']['width_um']+self.io['pads']['gnd_gap_um']*2)
+				
+				# Loop over each section of CPW taper and add it
+				last_height = bl[1]
+				for idx, seg_l in enumerate(self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+					
+					seg_w = self.io['faux_cpw_taper']['cpw_widths_um'][idx]
+					seg_g = self.io['faux_cpw_taper']['cpw_gaps_um'][idx]
+					
+					last_height -= seg_l
+					bond_pad_hole_positive.segment((tr[0]-self.io['pads']['width_um']/2, last_height), seg_w+seg_g*2)
+			
+			# Trim the rectangle so it doesn't extend over the edge of the chip
+			gnd_list = gdstk.boolean(self.gnd, bond_pad_hole_positive, "not", layer=self.layers["GND"])
+			
+			self.gnd = gnd_list
+		
+		# This should be moved to build I think
+		if self.NbTiN_is_etch:
+			info(f"Inverting layers to calculate etch pattern.")
+			inv_paths = gdstk.boolean(self.bulk, self.path, "not", layer=self.layers["NbTiN"])
+			info(f"Adding etch layers (Inverted)")
+			for ip in inv_paths:
+				debug(f"Added path from inverted path list.")
+				
+				critical("Need to implement this! New version of 'target_cell.add(ip)'")
+				# target_cell.add(ip)
+			
+			warning("NbTiN is etch needs to be fully implemented!")
+			
+			# TODO: Invert fiducials
+			# TODO: Invert io components
+			# TODO: Invert graphics
+		else:
+			info(f"Adding metal layers (Non-inverted)")
+			
+			if self.reticle_fiducial['on_gnd']:
+				
+				# Subtract text from ground
+				for f in self.fiducials:
+					self.gnd = gdstk.boolean(self.gnd, f, "not", layer=self.layers["GND"])
+				
+				# Clear fiducial list
+				self.fiducials = []
+	
+		return True
+		
+		
+	def build_standard(self):
+		''' Builds the chip with non-zero spirals'''
+		
 		# ---------------------------------------------------------------------
 		# Build spiral
 		
@@ -1174,7 +1740,115 @@ class ChipDesign:
 				
 			return self.tlin['Wcenter_um']
 	
-	def build_io_component(self, start_point, location_rules:dict, use_alt_side:bool=False):
+	def build_io_component(self, start_point, location_rules:dict, use_alt_side:bool=False, no_bends:bool=False):
+		""" Builds the meandered lines and bond pad for one conductor"""
+		
+		if no_bends:
+			self.build_io_component_through(start_point, location_rules, use_alt_side)
+		else:
+			self.build_io_component_standard(start_point, location_rules, use_alt_side)
+	
+	def build_io_component_through(self, start_point, location_rules:dict, use_alt_side:bool):
+		""" Builds bond pad and through line for one conductor"""
+				
+		debug("Adding taper and bond pad.")
+		
+		# Get offset parameters
+		baseline_offset = self.chip_size_um[1]//2 # Offset to translate (y = 0) to actual bottom of chip
+		just_offset = self.chip_size_um[0]//2 # Offset to translate (x = 0) to actual left side of chip
+		
+		# Get current point on line - initialize w/ end of bond pad
+		current_point = [location_rules['x_pad_offset_um']-just_offset, -self.pad_height+baseline_offset]
+		
+		# Create list of points and widths
+		point_list = []
+		width_list = []
+		
+		# Record how long along path you are, so know what taper width should be
+		dist = 0
+			
+		# Run until break
+		running = True
+		while running:
+			
+			if use_alt_side:
+				# Update position
+				current_point[1] -= self.io['taper']['segment_length_um']
+				dist += self.io['taper']['segment_length_um']
+				
+				# Check for end
+				if current_point[1] <= start_point[1]:
+					current_point[1] = start_point[1]
+					running = False
+				
+				# Add to lists
+				point_list.append((current_point[0], current_point[1]))
+				width_list.append(self.calc_taper_width(dist))
+			else:
+				# Update position
+				current_point[1] += self.io['taper']['segment_length_um']
+				dist += self.io['taper']['segment_length_um']
+				
+				# Check for end
+				if current_point[1] >= start_point[1]:
+					current_point[1] = start_point[1]
+					running = False
+				
+				# Add to lists
+				point_list.append((current_point[0], current_point[1]))
+				width_list.append(self.calc_taper_width(dist))
+		
+		# Initialize IO structure with bond pad
+		if not use_alt_side:
+			
+			# Create rectangular bond pad area
+			io_line = gdstk.FlexPath((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']-baseline_offset), self.io['pads']['width_um'], layer=self.layers["NbTiN"])
+			io_line.segment((location_rules['x_pad_offset_um']-just_offset, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset), self.io['pads']['width_um'])
+			
+			# Loop over each section of CPW taper and add it
+			last_height = self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset
+			for seg_w, seg_l in zip(self.io['faux_cpw_taper']['cpw_widths_um'], self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+				last_height += seg_l
+				io_line.segment((location_rules['x_pad_offset_um']-just_offset, last_height), seg_w)
+			
+			# Record bond pad dimensions TODO: DOes this need to changge for CPW taper?
+			pad_bb = []
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, self.io['pads']['chip_edge_buffer_um']-baseline_offset]) # bottom left
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, self.io['pads']['chip_edge_buffer_um']+self.io['pads']['height_um']-baseline_offset]) # top right
+			self.temp_pads.append(pad_bb)
+		else:
+			io_line = gdstk.FlexPath((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']+baseline_offset), self.io['pads']['width_um'], layer=self.layers["NbTiN"])
+			io_line.segment((location_rules['x_pad_offset_um']-just_offset, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset), self.io['pads']['width_um'])
+			
+			# Loop over each section of CPW taper and add it
+			last_height = -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset
+			for seg_w, seg_l in zip(self.io['faux_cpw_taper']['cpw_widths_um'], self.io['faux_cpw_taper']['cpw_section_lengths_um']):
+				last_height -= seg_l
+				io_line.segment((location_rules['x_pad_offset_um']-just_offset, last_height), seg_w)
+			
+			# Record bond pad dimensions TODO: DOes this need to changge for CPW taper?
+			pad_bb = []
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset-self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']-self.io['pads']['height_um']+baseline_offset]) # top right
+			pad_bb.append([location_rules['x_pad_offset_um']-just_offset+self.io['pads']['width_um']/2, -self.io['pads']['chip_edge_buffer_um']+baseline_offset]) # bottom left
+			
+			self.temp_pads.append(pad_bb)
+		
+		# Add points and widths to curve
+		for idx,pt in enumerate(point_list): # width_list):
+			
+			w = width_list[idx]
+			
+			io_line.segment(pt, w)
+		
+		self.io_line_list.append(io_line)
+		
+		taper_length = self.io['taper']['length_um']
+		info(f"Total meandered line length: >{rd(dist)}< um, Taper length: >{rd(taper_length)}<.")
+		
+		if dist < taper_length:
+			warning("Meandered line length is less than taper length! Sharp edge present.")
+	
+	def build_io_component_standard(self, start_point, location_rules:dict, use_alt_side:bool=False):
 		""" Builds the meandered lines and bond pad for one conductor"""
 		
 		debug("Adding taper and bond pad.")

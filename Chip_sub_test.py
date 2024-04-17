@@ -9,7 +9,7 @@ from core import *
 chip = ChipDesign()
 
 # chip.read_conf(os.path.join("designs", "MC-2024Q1-D1-AusfA.json"))
-chip.read_conf(os.path.join("designs", "MC-2024Q1V-D3-AusfA.json"))
+chip.read_conf(os.path.join("designs", "MC-2024Q1V-D1-AusfA.json"))
 
 chip.build()
 
