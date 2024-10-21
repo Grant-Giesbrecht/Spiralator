@@ -1501,6 +1501,22 @@ class ChipDesign:
 		info(f"Total spiral length: >{spiral_length} um<.")
 		
 		# Create FlexPath object for pattern
+		
+		#TODO: To make a stepped-impedance, the FlexPath line below needs to be replaced with something along the lines of:
+		#
+		# # Create a robust path
+		# path = gdstk.RobustPath((0, 0), width=1)
+		# path.segment((10, 0))
+		# path.segment((10, 10), width=2)
+		# path.segment((20, 10), width=3)
+
+		# # Create a cell and add the path
+		# cell = gdstk.Cell("stepped_path")
+		# cell.add(path)
+
+		# # Write the layout to a GDSII file
+		# gdstk.write_gds("stepped_path.gds", cell)
+		
 		self.path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
 		
 		# Invert selection if color is etch

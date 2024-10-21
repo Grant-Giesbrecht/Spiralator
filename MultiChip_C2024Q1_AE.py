@@ -80,7 +80,7 @@ def create_chip(tlin_width:float, model_str:str):
 	chip_meister.build()
 	chip_meister.apply_objects()
 
-	chip_meister.write(os.path.join("GDS", f"MultiChip_2024Q1_{model_str}.gds"))
+	chip_meister.write(os.path.join("GDS_2", f"MultiChip_2024Q1_{model_str}.gds"))
 
 # Define models
 model_names = ["A", "B", "C", "D", "E"]
