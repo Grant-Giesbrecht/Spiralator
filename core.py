@@ -351,6 +351,18 @@ class ChipDesign:
 		self.pad_height = -1
 		
 		self.surpress_warning_ttype = False 
+		
+		self.use_steps = False
+		self.step_width_um = None
+		self.step_length_um = None
+		self.step_spacing_um = None
+		
+	def configure_steps(self, step_width_um:float, step_length_um:float, step_spacing_um:float):
+		
+		self.use_steps = True
+		self.step_width_um = step_width_um
+		self.step_length_um = step_length_um
+		self.step_spacing_um = step_spacing_um
 	
 	def update(self):
 		""" Update automatically calcualted parameters """
@@ -1517,8 +1529,38 @@ class ChipDesign:
 		# # Write the layout to a GDSII file
 		# gdstk.write_gds("stepped_path.gds", cell)
 		
-		self.path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
+		if not self.use_steps:
+			self.path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
 		
+		else:
+			
+			self.path = gdstk.FlexPath(path_list[0], width=self.tlin['Wcenter_um'])
+			
+			point_last = path_list[0]
+			distance = 0
+			is_on_step = False
+			for pl in path_list[1:]:
+				
+				distance += np.sqrt( (pl[0]-point_last[0])**2 + (pl[1]-point_last[1])**2 )
+				
+				# If past distance, change to step
+				if distance >= self.step_spacing_um:
+					
+					# Add to path
+					if is_on_step:
+						self.path.segment(pl, width=self.step_width_um)
+					else:
+						self.path.segment(pl, width=self.tlin['Wcenter_um'])
+					
+					is_on_step = (not is_on_step)
+					distance = 0
+				
+				# Add to path
+				if is_on_step:
+					self.path.segment(pl, width=self.step_width_um)
+				else:
+					self.path.segment(pl, width=self.tlin['Wcenter_um'])
+					
 		# Invert selection if color is etch
 		self.bulk = gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges'])
 		self.gnd.append(gdstk.rectangle(self.corner_bl, self.corner_tr, layer=self.layers['Edges']))

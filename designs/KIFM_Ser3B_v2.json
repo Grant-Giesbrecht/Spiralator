@@ -1,15 +1,15 @@
 {
-	"name": "KIFM_Series_3_v2",
+	"name": "KIFM_Series_3B_v2",
 	"chip_size_um": [5000, 10e3],
 	"chip_edge_buffer_um": 275,
 	"spiral_io_buffer_um": 285,
 	"spiral": {
-		"num_rotations": 42,
-		"spacing_um": 50,
+		"num_rotations": 75,
+		"spacing_um": 30,
 		"num_points": 2500,
 		"tail_length_um": 10,
 		"horiz_stretch_um": 0,
-		"vert_stretch_um": 3400
+		"vert_stretch_um": 4800
 	},
 	"reversal": {
 		"mode": "circle_smooth",
@@ -40,12 +40,12 @@
 			"pad_exposed_height_um": 250
 		},
 		"outer": {
-			"x_pad_offset_um": 2500,
-			"y_line_offset_um": 250
+			"x_pad_offset_um": 4200,
+			"y_line_offset_um": 110
 		},
 		"inner": {
-			"x_pad_offset_um": 2500,
-			"y_line_offset_um": 250
+			"x_pad_offset_um": 800,
+			"y_line_offset_um": 110
 		},
 		"faux_cpw_taper":{
 			"cpw_widths_um": [3],
