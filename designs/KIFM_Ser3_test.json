@@ -21,6 +21,9 @@
 		"Wcenter_um": 3,
 		"Wgap_um": 3
 	},
+	"steps": {
+		"step_perturbation_um": 0.1
+	},
 	"NbTiN_is_etch": false,
 	"aSi_is_etch": true,
 	"io": {
