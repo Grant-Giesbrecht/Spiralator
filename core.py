@@ -14,6 +14,8 @@ from matplotlib.font_manager import FontProperties
 from matplotlib.textpath import TextPath
 from matplotlib import get_data_path
 
+import matplotlib.pyplot as plt
+
 PI = 3.1415926535
 
 #
@@ -37,7 +39,7 @@ except getopt.GetoptError as err:
 	sys.exit(2)
 for opt, aarg in opts:
 	if opt in ("-h", "--help"):
-		print(f"{Fore.RED}LOL just kidding I haven't made any help text yet. ~~OOPS~~{Style.RESET_ALL}")
+		print(f"{Fore.RED}Whoops just kidding I haven't made any help text yet. ~~OOPS~~{Style.RESET_ALL}")
 		sys.exit()
 	elif opt == "--debug":
 		LOG_LEVEL = logging.DEBUG
@@ -1530,13 +1532,16 @@ class ChipDesign:
 		else:
 			
 			# Prepare a flexpath with first point
-			self.path = gdstk.FlexPath(path_list[0], width=self.tlin['Wcenter_um'], joins='natural')
+			self.path = gdstk.FlexPath(path_list[0], width=self.tlin['Wcenter_um'], joins='natural', tolerance=3e-2)
 			
 			# Scan over path, checking for distance traveled
 			point_last = path_list[0]
 			distance = 0
 			is_on_step = False
 			# for pl in path_list[1:]:
+			
+			all_x_debug = [path_list[0][0]]
+			all_y_debug = [path_list[0][1]]
 			
 			path_list_idx = 1
 			while path_list_idx < len(path_list):
@@ -1566,18 +1571,31 @@ class ChipDesign:
 					dy = pl[1]-point_last[1]
 					interp_x = dx*frac_usage + point_last[0] # Get interpolated X
 					interp_y = dy*frac_usage + point_last[1] # Get interpolated Y
-					interp_x_e = interp_x - approx_sign(dx, self.steps['sign_tol_um'])*self.steps['step_perturbation_um'] # Get interpolated X slightly perturbed
-					interp_y_e = interp_y - approx_sign(dy, self.steps['sign_tol_um'])*self.steps['step_perturbation_um'] # Get interpolated Y slightly perturbed
+					
+					e_x = dx/segment_length*self.steps['step_perturbation_um']
+					e_y = dy/segment_length*self.steps['step_perturbation_um']
+					
+					if (e_x**2 + e_y**2)**0.5 > self.steps['step_perturbation_um']*1.01:
+						error(f"ex = {e_x}, e_y = {e_y}")
+					
+					if frac_usage >= 1:
+						print(f"ex = {e_x}, e_y = {e_y}")
+					
+					interp_x_e = interp_x - e_x # Get interpolated X slightly perturbed
+					interp_y_e = interp_y - e_y # Get interpolated Y slightly perturbed
 					
 					# Add interpolated points to path
 					if is_on_step:
 						self.path.segment([interp_x_e, interp_y_e], width=self.step_width_um)
-						# self.path.segment([interp_x, interp_y], width=self.step_width_um)
 						self.path.segment([interp_x, interp_y], width=self.tlin['Wcenter_um'])
 					else:
 						self.path.segment([interp_x_e, interp_y_e], width=self.tlin['Wcenter_um'])
-						# self.path.segment([interp_x, interp_y], width=self.tlin["Wcenter_um"])
 						self.path.segment([interp_x, interp_y], width=self.step_width_um)
+					
+					all_x_debug.append(interp_x_e)
+					all_x_debug.append(interp_x)
+					all_y_debug.append(interp_y_e)
+					all_y_debug.append(interp_y)
 					
 					is_on_step = (not is_on_step) # Toggle width
 					point_last = [interp_x, interp_y] # Update last point
@@ -1591,13 +1609,19 @@ class ChipDesign:
 						self.path.segment(pl, width=self.step_width_um)
 					else:
 						self.path.segment(pl, width=self.tlin['Wcenter_um'])
-				
+					
+					all_x_debug.append(pl[0])
+					all_y_debug.append(pl[1])
+					
 					# Update last point
 					point_last = pl
 					distance = new_distance
 					
 					# Increment index
 					path_list_idx += 1
+		
+		# plt.scatter(all_x_debug, all_y_debug)
+		# plt.show()
 		
 		#
 		##================ END MAKE STEPPED IMPEDANCE STRUCTURES
