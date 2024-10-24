@@ -47,7 +47,7 @@ def create_chip(tlin_width:float, model_str:str):
 	# Create first chip design
 	chip_d3 = ChipDesign()
 	# chip_d3.read_conf(os.path.join("designs", "MC-2024Q1V-D3-AusfA.json"))
-	chip_d3.read_conf(os.path.join("designs", "KIFM_Ser3_v2.json"))
+	chip_d3.read_conf(os.path.join("designs", "KIFM_Ser3_test.json"))
 	
 	chip_d3.configure_steps(24, 10, 10)
 	
@@ -72,24 +72,30 @@ def create_chip(tlin_width:float, model_str:str):
 	chip_d3.insert_graphic((600, -4300), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)
 
 	#------------------------- Create Master Design ---------------------
-
+	
+	chip_d3.apply_objects()
+	chip_d3.write(os.path.join("GDS_2", f"KIFM_Ser-3A_Mdl-{model_str}.gds"))
+	
 	# chip_d1.write(os.path.join("GDS_2", f"KIFM_Ser-3_Mdl-{model_str}.gds"))
 
-	chip_meister = MultiChipDesign(1)
+	# chip_meister = MultiChipDesign(1)
 
-	# chip_meister.read_conf("Multi_2024Q1.json")
-	chip_meister.add_design(chip_d3, rotation=0, translation=[0, 0])
-	# chip_meister.add_design(chip_d2, rotation=0, translation=[-1300, 0])
-	# chip_meister.add_design(chip_d3, rotation=0, translation=[800, 0])
+	# # chip_meister.read_conf("Multi_2024Q1.json")
+	# chip_meister.add_design(chip_d3, rotation=0, translation=[0, 0])
+	# # chip_meister.add_design(chip_d2, rotation=0, translation=[-1300, 0])
+	# # chip_meister.add_design(chip_d3, rotation=0, translation=[800, 0])
 
-	chip_meister.build()
-	chip_meister.apply_objects()
+	# chip_meister.build()
+	# chip_meister.apply_objects()
 
-	chip_meister.write(os.path.join("GDS_2", f"KIFM_Ser-3A_Mdl-{model_str}.gds"))
+	# chip_meister.write(os.path.join("GDS_2", f"KIFM_Ser-3A_Mdl-{model_str}.gds"))
 
 # Define models
 model_names = ["A", "B", "C"]
 widths = [3.3, 3.7, 4.4]
+
+model_names = ["A"]
+widths = [3.3]
 
 # Create each
 for model,w in zip(model_names, widths):

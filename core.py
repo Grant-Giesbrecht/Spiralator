@@ -1542,15 +1542,16 @@ class ChipDesign:
 			for pl in path_list[1:]:
 				
 				distance += np.sqrt( (pl[0]-point_last[0])**2 + (pl[1]-point_last[1])**2 )
+				point_last = pl
 				
 				# If past distance, change to step
 				if distance >= self.step_spacing_um:
 					
-					# Add to path
-					if is_on_step:
-						self.path.segment(pl, width=self.step_width_um)
-					else:
-						self.path.segment(pl, width=self.tlin['Wcenter_um'])
+					# # Add to path
+					# if is_on_step:
+					# 	self.path.segment(pl, width=self.step_width_um)
+					# else:
+					# 	self.path.segment(pl, width=self.tlin['Wcenter_um'])
 					
 					is_on_step = (not is_on_step)
 					distance = 0
