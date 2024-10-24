@@ -1517,13 +1517,20 @@ class ChipDesign:
 		##================ MAKE STEPPED IMPEDANCE STRUCTURES
 		#
 		
+		def approx_sign(val:float, tol:float):
+			
+			if np.abs(val) <= np.abs(tol):
+				return 0
+			
+			return np.sign(val)
+		
 		if not self.use_steps:
 			self.path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
 		
 		else:
 			
 			# Prepare a flexpath with first point
-			self.path = gdstk.FlexPath(path_list[0], width=self.tlin['Wcenter_um'])
+			self.path = gdstk.FlexPath(path_list[0], width=self.tlin['Wcenter_um'], joins='natural')
 			
 			# Scan over path, checking for distance traveled
 			point_last = path_list[0]
@@ -1544,24 +1551,32 @@ class ChipDesign:
 				segment_length = np.sqrt( (pl[0]-point_last[0])**2 + (pl[1]-point_last[1])**2 )
 				new_distance = distance + segment_length
 				
+				# Pick between step spacing or length
+				if is_on_step:
+					targ_distance = self.step_length_um
+				else:
+					targ_distance = self.step_spacing_um
+				
 				# If past distance, change step
-				if new_distance >= self.step_spacing_um: # Need to interpolate and add step!
+				if new_distance >= targ_distance: # Need to interpolate and add step!
 					
 					# Interpolate new point to use
-					frac_usage = (self.step_spacing_um - distance)/segment_length # Fraction of segment length needed to get to target step length
+					frac_usage = (targ_distance - distance)/segment_length # Fraction of segment length needed to get to target step length
 					dx = pl[0]-point_last[0]
 					dy = pl[1]-point_last[1]
 					interp_x = dx*frac_usage + point_last[0] # Get interpolated X
 					interp_y = dy*frac_usage + point_last[1] # Get interpolated Y
-					interp_x_e = interp_x - np.sign(dx)*self.steps['step_perturbation_um'] # Get interpolated X slightly perturbed
-					interp_y_e = interp_y - np.sign(dy)*self.steps['step_perturbation_um'] # Get interpolated Y slightly perturbed
+					interp_x_e = interp_x - approx_sign(dx, self.steps['sign_tol_um'])*self.steps['step_perturbation_um'] # Get interpolated X slightly perturbed
+					interp_y_e = interp_y - approx_sign(dy, self.steps['sign_tol_um'])*self.steps['step_perturbation_um'] # Get interpolated Y slightly perturbed
 					
 					# Add interpolated points to path
 					if is_on_step:
 						self.path.segment([interp_x_e, interp_y_e], width=self.step_width_um)
+						# self.path.segment([interp_x, interp_y], width=self.step_width_um)
 						self.path.segment([interp_x, interp_y], width=self.tlin['Wcenter_um'])
 					else:
 						self.path.segment([interp_x_e, interp_y_e], width=self.tlin['Wcenter_um'])
+						# self.path.segment([interp_x, interp_y], width=self.tlin["Wcenter_um"])
 						self.path.segment([interp_x, interp_y], width=self.step_width_um)
 					
 					is_on_step = (not is_on_step) # Toggle width

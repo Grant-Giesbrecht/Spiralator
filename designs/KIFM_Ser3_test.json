@@ -6,7 +6,7 @@
 	"spiral": {
 		"num_rotations": 2,
 		"spacing_um": 50,
-		"num_points": 5000,
+		"num_points": 100,
 		"tail_length_um": 10,
 		"horiz_stretch_um": 0,
 		"vert_stretch_um": 3400
@@ -14,7 +14,7 @@
 	"reversal": {
 		"mode": "circle_smooth",
 		"diameter_um": 200,
-		"num_points": 1000
+		"num_points": 500
 	},
 	"tlin": {
 		"type": "CPW",
@@ -22,7 +22,8 @@
 		"Wgap_um": 3
 	},
 	"steps": {
-		"step_perturbation_um": 0.1
+		"step_perturbation_um": 0.1,
+		"sign_tol_um": 0.001
 	},
 	"NbTiN_is_etch": false,
 	"aSi_is_etch": true,
