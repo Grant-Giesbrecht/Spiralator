@@ -1543,6 +1543,11 @@ class ChipDesign:
 			all_x_debug = [path_list[0][0]]
 			all_y_debug = [path_list[0][1]]
 			
+			x_wide = []
+			x_narrow = []
+			y_wide = []
+			y_narrow = []
+			
 			path_list_idx = 1
 			while path_list_idx < len(path_list):
 				# Using a while-loop because when a point is interpolated, it is added to the list,
@@ -1588,9 +1593,21 @@ class ChipDesign:
 					if is_on_step:
 						self.path.segment([interp_x_e, interp_y_e], width=self.step_width_um)
 						self.path.segment([interp_x, interp_y], width=self.tlin['Wcenter_um'])
+						
+						x_wide.append(interp_x_e)
+						x_narrow.append(interp_x)
+						
+						y_wide.append(interp_y_e)
+						y_narrow.append(interp_y)
 					else:
 						self.path.segment([interp_x_e, interp_y_e], width=self.tlin['Wcenter_um'])
 						self.path.segment([interp_x, interp_y], width=self.step_width_um)
+						
+						x_narrow.append(interp_x_e)
+						x_wide.append(interp_x)
+						
+						y_narrow.append(interp_y_e)
+						y_wide.append(interp_y)
 					
 					all_x_debug.append(interp_x_e)
 					all_x_debug.append(interp_x)
@@ -1620,7 +1637,9 @@ class ChipDesign:
 					# Increment index
 					path_list_idx += 1
 		
-		# plt.scatter(all_x_debug, all_y_debug)
+		# plt.plot(all_x_debug, all_y_debug, marker='.', linewidth=0.2, linestyle=':')
+		# plt.scatter(x_narrow, y_narrow, marker='v')
+		# plt.scatter(x_wide, y_wide, marker='^')
 		# plt.show()
 		
 		#
