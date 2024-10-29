@@ -359,12 +359,13 @@ class ChipDesign:
 		self.step_length_um = None
 		self.step_spacing_um = None
 		
-	def configure_steps(self, step_width_um:float, step_length_um:float, step_spacing_um:float):
+	def configure_steps(self, ZL_width_um:float, ZH_width_um:float, ZL_length_um:float, ZH_length_um:float):
 		
 		self.use_steps = True
-		self.step_width_um = step_width_um
-		self.step_length_um = step_length_um
-		self.step_spacing_um = step_spacing_um
+		self.step_width_um = ZL_width_um
+		self.ZH_step_width_um = ZH_width_um
+		self.step_length_um = ZL_length_um
+		self.step_spacing_um = ZH_length_um
 	
 	def update(self):
 		""" Update automatically calcualted parameters """
@@ -1532,7 +1533,7 @@ class ChipDesign:
 		else:
 			
 			# Prepare a flexpath with first point
-			self.path = gdstk.FlexPath(path_list[0], width=self.tlin['Wcenter_um'], joins='natural', tolerance=3e-2)
+			self.path = gdstk.FlexPath(path_list[0], width=self.ZH_step_width_um, joins='natural', tolerance=3e-2)
 			
 			# Scan over path, checking for distance traveled
 			point_last = path_list[0]
@@ -1547,6 +1548,8 @@ class ChipDesign:
 			x_narrow = []
 			y_wide = []
 			y_narrow = []
+			
+			num_ZL_sections = 0
 			
 			path_list_idx = 1
 			while path_list_idx < len(path_list):
@@ -1592,7 +1595,7 @@ class ChipDesign:
 					# Add interpolated points to path
 					if is_on_step:
 						self.path.segment([interp_x_e, interp_y_e], width=self.step_width_um)
-						self.path.segment([interp_x, interp_y], width=self.tlin['Wcenter_um'])
+						self.path.segment([interp_x, interp_y], width=self.ZH_step_width_um)
 						
 						x_wide.append(interp_x_e)
 						x_narrow.append(interp_x)
@@ -1600,7 +1603,10 @@ class ChipDesign:
 						y_wide.append(interp_y_e)
 						y_narrow.append(interp_y)
 					else:
-						self.path.segment([interp_x_e, interp_y_e], width=self.tlin['Wcenter_um'])
+						
+						num_ZL_sections += 1
+						
+						self.path.segment([interp_x_e, interp_y_e], width=self.ZH_step_width_um)
 						self.path.segment([interp_x, interp_y], width=self.step_width_um)
 						
 						x_narrow.append(interp_x_e)
@@ -1625,7 +1631,7 @@ class ChipDesign:
 					if is_on_step:
 						self.path.segment(pl, width=self.step_width_um)
 					else:
-						self.path.segment(pl, width=self.tlin['Wcenter_um'])
+						self.path.segment(pl, width=self.ZH_step_width_um)
 					
 					all_x_debug.append(pl[0])
 					all_y_debug.append(pl[1])
@@ -1641,6 +1647,9 @@ class ChipDesign:
 		# plt.scatter(x_narrow, y_narrow, marker='v')
 		# plt.scatter(x_wide, y_wide, marker='^')
 		# plt.show()
+		
+		
+		info(f"Added {num_ZL_sections} low impedance steps.")
 		
 		#
 		##================ END MAKE STEPPED IMPEDANCE STRUCTURES

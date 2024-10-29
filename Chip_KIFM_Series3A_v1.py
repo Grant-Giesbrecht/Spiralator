@@ -47,9 +47,9 @@ def create_chip(tlin_width:float, model_str:str):
 	# Create first chip design
 	chip_d3 = ChipDesign()
 	# chip_d3.read_conf(os.path.join("designs", "MC-2024Q1V-D3-AusfA.json"))
-	chip_d3.read_conf(os.path.join("designs", "KIFM_Ser3_test.json"))
+	chip_d3.read_conf(os.path.join("designs", "KIFM_Ser3_v2.json"))
 	
-	chip_d3.configure_steps(10, 60, 120)
+	chip_d3.configure_steps(ZL_width_um=6, ZH_width_um=2, ZL_length_um=8, ZH_length_um=264)
 	
 	# Overwrite width
 	chip_d3.tlin['Wcenter_um'] = tlin_width

@@ -4,9 +4,9 @@
 	"chip_edge_buffer_um": 275,
 	"spiral_io_buffer_um": 285,
 	"spiral": {
-		"num_rotations": 42,
+		"num_rotations": 30,
 		"spacing_um": 50,
-		"num_points": 2500,
+		"num_points": 2000,
 		"tail_length_um": 10,
 		"horiz_stretch_um": 0,
 		"vert_stretch_um": 3400
@@ -14,12 +14,16 @@
 	"reversal": {
 		"mode": "circle_smooth",
 		"diameter_um": 200,
-		"num_points": 120
+		"num_points": 300
 	},
 	"tlin": {
 		"type": "CPW",
 		"Wcenter_um": 3,
 		"Wgap_um": 3
+	},
+	"steps": {
+		"step_perturbation_um": 0.035,
+		"sign_tol_um": 0.0001
 	},
 	"NbTiN_is_etch": false,
 	"aSi_is_etch": true,
