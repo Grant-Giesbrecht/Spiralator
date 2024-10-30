@@ -59,14 +59,24 @@ def create_chip(tlin_width:float, model_str:str):
 	text_size = 125
 	line_gap = 35
 	baseline = 4200
-	justify_line = 800
+	justify_line = -1400
 	
-	chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), f"KIFM SERIES-3 Mdl. {model_str}", selected_font, text_size)
-	chip_d3.insert_text((justify_line, baseline+line_gap+text_size), "FREQUENCY CONVERTER", selected_font, text_size)
-	chip_d3.insert_text((justify_line, baseline), f"WIDTH = {tlin_width} um", selected_font, text_size)
+	chip_d3.insert_text((justify_line, baseline+line_gap*3.25+3.25*text_size), f"KINETIC INDUCTANCE", selected_font, text_size, center_justify=True)
+	chip_d3.insert_text((justify_line, baseline+line_gap*2.25+2.25*text_size), f"FREQUENCY CONVERTER", selected_font, text_size, center_justify=True)
+	chip_d3.insert_text((justify_line, baseline+line_gap+text_size), f"SERIES-3.1 Mdl. A", selected_font, text_size, center_justify=True)
+	chip_d3.insert_text((justify_line, baseline), f"WIDTH = {tlin_width} µm", selected_font, text_size, center_justify=True)
+	
+	# chip_d3.insert_text((justify_line, baseline+line_gap*3.25+3.25*text_size), f"Kinetic Inductance", selected_font, text_size, center_justify=True)
+	# chip_d3.insert_text((justify_line, baseline+line_gap*2.25+2.25*text_size), f"Frequency Converter", selected_font, text_size, center_justify=True)
+	# chip_d3.insert_text((justify_line, baseline+line_gap+text_size), f"SERIES-3.1 MODEL A", selected_font, text_size, center_justify=True)
+	# chip_d3.insert_text((justify_line, baseline), f"WIDTH = {tlin_width} µm", selected_font, text_size, center_justify=True)
+	
+	# chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), f"KIFM SERIES-3 Mdl. {model_str}", selected_font, text_size)
+	# chip_d3.insert_text((justify_line, baseline+line_gap+text_size), "FREQUENCY CONVERTER", selected_font, text_size)
+	# chip_d3.insert_text((justify_line, baseline), f"WIDTH = {tlin_width} um", selected_font, text_size)
 
 	chip_d3.insert_text((-1200, -4800+line_gap+text_size), "LENGTH", selected_font, text_size, center_justify=True)
-	chip_d3.insert_text((-1200, -4800), f"<TODO> mm", selected_font, text_size, center_justify=True)
+	chip_d3.insert_text((-1200, -4800), f"390.5 mm", selected_font, text_size, center_justify=True)
 
 	chip_d3.insert_graphic((600, -4800), os.path.join("assets", "graphics", "CU.gds"), 350)
 	chip_d3.insert_graphic((600, -4300), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)
@@ -94,7 +104,7 @@ def create_chip(tlin_width:float, model_str:str):
 model_names = ["A", "B", "C"]
 widths = [3.3, 3.7, 4.4]
 
-model_names = ["A"]
+model_names = ["C"]
 widths = [3.3]
 
 # Create each
