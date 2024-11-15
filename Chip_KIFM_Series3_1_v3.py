@@ -33,14 +33,15 @@ def create_chip(tlin_width:float, model_str:str):
 	
 	# ##---------------------------- Design 2 ---------------------------------
 
-	# # Create first chip design
-	# chip_d2 = ChipDesign()
-	# chip_d2.read_conf(os.path.join("designs", "MC-2024Q1V-D2-AusfA.json"))
+	# Create first chip design
+	chip_d2 = ChipDesign()
+	chip_d2.read_conf(os.path.join("designs", "KIFM_Ser3_1_Tr3_v3.json"))
+	chip_d2.configure_steps(ZL_width_um=6, ZH_width_um=2, ZL_length_um=8, ZH_length_um=264)
 	
-	# # Overwrite width
-	# chip_d2.tlin['Wcenter_um'] = tlin_width
+	# Overwrite width
+	chip_d2.tlin['Wcenter_um'] = tlin_width
 	
-	# chip_d2.build()
+	chip_d2.build()
 
 	# chip_d2.insert_text((0, -4000+line_gap+text_size), "LENGTH", selected_font, text_size, center_justify=True)
 	# chip_d2.insert_text((0, -4000), f"43.1 mm", selected_font, text_size, center_justify=True)
@@ -61,8 +62,8 @@ def create_chip(tlin_width:float, model_str:str):
 
 	text_size = 125
 	line_gap = 35
-	baseline = 4200
-	justify_line = -1400
+	baseline = 4000
+	justify_line = -1000
 	
 	chip_d3.insert_text((justify_line, baseline+line_gap*3.25+3.25*text_size), f"KINETIC INDUCTANCE", selected_font, text_size, center_justify=True)
 	chip_d3.insert_text((justify_line, baseline+line_gap*2.25+2.25*text_size), f"FREQUENCY CONVERTER", selected_font, text_size, center_justify=True)
@@ -78,11 +79,30 @@ def create_chip(tlin_width:float, model_str:str):
 	# chip_d3.insert_text((justify_line, baseline+line_gap+text_size), "FREQUENCY CONVERTER", selected_font, text_size)
 	# chip_d3.insert_text((justify_line, baseline), f"WIDTH = {tlin_width} um", selected_font, text_size)
 
-	chip_d3.insert_text((-1200, -4800+line_gap+text_size), "LENGTH", selected_font, text_size, center_justify=True)
-	chip_d3.insert_text((-1200, -4800), f"390.5 mm", selected_font, text_size, center_justify=True)
+	line_gap = 25
+	baseline = -4900
+	justify_line = -1670
+	chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), "TRACE-1", selected_font, text_size, center_justify=False)
+	chip_d3.insert_text((justify_line, baseline+line_gap+text_size), "NO STEPS", selected_font, text_size, center_justify=False)
+	chip_d3.insert_text((justify_line, baseline), f"L = 8.65 mm", selected_font, text_size, center_justify=False)
+	
+	baseline = -4000
+	justify_line = 0
+	chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), "TRACE-2", selected_font, text_size, center_justify=True)
+	chip_d3.insert_text((justify_line, baseline+line_gap+text_size), "N = 1435", selected_font, text_size, center_justify=True)
+	chip_d3.insert_text((justify_line, baseline), f"L = 390.5 mm", selected_font, text_size, center_justify=True)
+	
+	baseline = -4900
+	justify_line = 1670
+	chip_d3.insert_text((justify_line, baseline+line_gap*2+2*text_size), "TRACE-3", selected_font, text_size, right_justify=True)
+	chip_d3.insert_text((justify_line, baseline+line_gap+text_size), "N = <TODO>", selected_font, text_size, right_justify=True)
+	chip_d3.insert_text((justify_line, baseline), f"L = 8.65 mm", selected_font, text_size, right_justify=True)
 
-	chip_d3.insert_graphic((600, -4800), os.path.join("assets", "graphics", "CU.gds"), 350)
-	chip_d3.insert_graphic((600, -4300), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)
+	# chip_d3.insert_graphic((600, -4800), os.path.join("assets", "graphics", "CU.gds"), 350)
+	# chip_d3.insert_graphic((600, -4300), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)
+	
+	chip_d3.insert_graphic((920, 4125), os.path.join("assets", "graphics", "CU.gds"), 350)
+	chip_d3.insert_graphic((600, 4525), os.path.join("assets", "graphics", "NIST.gds"), 1000, read_layer=10)
 
 	#------------------------- Create Master Design ---------------------
 	
@@ -95,7 +115,8 @@ def create_chip(tlin_width:float, model_str:str):
 
 	# # chip_meister.read_conf("Multi_2024Q1.json")
 	chip_meister.add_design(chip_d1, rotation=0, translation=[-2125, 0])
-	chip_meister.add_design(chip_d3, rotation=0, translation=[375, 0])
+	chip_meister.add_design(chip_d3, rotation=0, translation=[0, 0])
+	chip_meister.add_design(chip_d2, rotation=0, translation=[2125, 0])
 	# chip_meister.add_design(chip_d3, rotation=0, translation=[800, 0])
 
 	chip_meister.build()

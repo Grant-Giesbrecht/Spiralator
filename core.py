@@ -1649,7 +1649,7 @@ class ChipDesign:
 		# plt.show()
 		
 		
-		info(f"Added {num_ZL_sections} low impedance steps.")
+			info(f"Added {num_ZL_sections} low impedance steps.")
 		
 		#
 		##================ END MAKE STEPPED IMPEDANCE STRUCTURES
@@ -2315,7 +2315,7 @@ class ChipDesign:
 		if dist < taper_length:
 			warning("Meandered line length is less than taper length! Sharp edge present.")
 	
-	def insert_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None, center_justify:bool=False):
+	def insert_text(self, position:list, text:str, font_path:str=None, font_size_um:float=100, tolerance=0.1, layer=None, center_justify:bool=False, right_justify:bool=False):
 		''' Inserts custom text to the chip. Can use any TrueType font (rather than just the default supplied with gdstk). '''
 		
 		if self.graphics_on_gnd:
@@ -2349,7 +2349,27 @@ class ChipDesign:
 				
 				# Re-render text
 				text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=self.layers['NbTiN'])
+			
+			elif right_justify:
 				
+				# Get bounding box
+				min_x, max_x = None, None
+				for to in text_obj:
+					
+					bb = to.bounding_box()
+					
+					if min_x is None or bb[0][0] < min_x:
+						min_x = bb[0][0]
+					
+					if max_x is None or bb[1][0] > max_x:
+						max_x = bb[1][0]
+				
+				# update position
+				text_width = max_x - min_x
+				position = (position[0] - text_width, position[1])
+				
+				# Re-render text
+				text_obj = render_text(text, size=font_size_um, font_path=font_path, position=position, tolerance=tolerance, layer=self.layers['NbTiN'])
 			
 			# Subtract text from ground
 			for to in text_obj:
