@@ -17,7 +17,12 @@ def create_chip(tlin_width:float, model_str:str):
 	baseline = -4900
 	
 	# ##---------------------------- Design 1 ---------------------------------
-
+	
+	print("*"*60)
+	print(f"DESIGN 1, THROUGH, NO STEPS")
+	print("*"*60)
+	print("")
+	
 	# Create first chip design
 	chip_d1 = ChipDesign()
 	# chip_d1.read_conf(os.path.join("~", "Documents", "GitHub", "Spiralator", "series_3", "Series 3.1", "model_c", "designs", "KIFM_Ser3_1C_TrX_v4.json"))
@@ -43,7 +48,13 @@ def create_chip(tlin_width:float, model_str:str):
 	chip_d1.write(os.path.join("GDS", f"KIFM_Ser-3.1_Tr1C_Mdl-{model_str}.gds"))
 	
 	# ##---------------------------- Design 3 ---------------------------------
-
+	
+	print("\n"*2)
+	print("*"*60)
+	print(f"DESIGN 3, THROUGH, STEPPED")
+	print("*"*60)
+	print("")
+	
 	# Create first chip design
 	chip_d3 = ChipDesign()
 	# chip_d3.read_conf(os.path.join("~", "Documents", "GitHub", "Spiralator", "series_3", "Series 3.1", "model_c", "designs", "KIFM_Ser3_1C_TrX_v4.json"))
@@ -67,7 +78,13 @@ def create_chip(tlin_width:float, model_str:str):
 	# chip_d2.insert_text((0, -4000), f"43.1 mm", selected_font, text_size, center_justify=True)
 
 	##---------------------------- Design 2 ---------------------------------
-
+	
+	print("\n"*2)
+	print("*"*60)
+	print(f"DESIGN 2, SPIRAL, STEPPED")
+	print("*"*60)
+	print("")
+	
 	# Create first chip design
 	chip_d2 = ChipDesign()
 	# chip_d3.read_conf(os.path.join("designs", "MC-2024Q1V-D3-AusfA.json"))
@@ -136,6 +153,13 @@ def create_chip(tlin_width:float, model_str:str):
 	#------------------------- Create Master Design ---------------------
 	
 	chip_d2.apply_objects()
+	
+	print("\n"*2)
+	print("="*60)
+	print(f"MASTER, COMBINING DESIGNS 1-3")
+	print("="*60)
+	print("")
+	
 	# chip_d2.write(os.path.join("GDS", f"KIFM_Ser-3.1_Tr2_Mdl-{model_str}.gds"))
 	
 	# chip_d1.write(os.path.join("GDS_2", f"KIFM_Ser-3_Mdl-{model_str}.gds"))

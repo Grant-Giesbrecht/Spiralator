@@ -1611,8 +1611,12 @@ class ChipDesign:
 						
 						point_list.append((current_point[0], baseline_offset - self.pad_height))
 						width_list.append(self.tlin['Wcenter_um'])
+					
+						dist += np.abs((baseline_offset - self.pad_height) - current_point[1])
+						
+				info(f"Number of steps on upper half of through: {num_steps}")
+				info(f"Upper half of through, length: {dist} um")
 				
-				info(f"Number of steps on lower half of through: {num_steps}")
 			else:
 				
 				pad_end_y = self.pad_height-baseline_offset+self.through_leads_um
@@ -1657,8 +1661,11 @@ class ChipDesign:
 						
 						point_list.append((current_point[0], -baseline_offset + self.pad_height))
 						width_list.append(self.tlin['Wcenter_um'])
+						
+						dist += np.abs((-baseline_offset + self.pad_height) - current_point[1])
 				
 				info(f"Number of steps on lower half of through: {num_steps}")
+				info(f"Lower half of through, length: {dist} um")
 		else: # Build taper
 			
 			# Get current point on line - initialize w/ end of bond pad
@@ -1669,27 +1676,37 @@ class ChipDesign:
 			while running:
 				
 				if use_alt_side:
+					last_y = current_point[1]
+					
 					# Update position
 					current_point[1] -= self.io['taper']['segment_length_um']
-					dist += self.io['taper']['segment_length_um']
+					# dist += self.io['taper']['segment_length_um']
 					
 					# Check for end
 					if current_point[1] <= start_point[1]:
+						# dist += np.abs(start_point[1] - current_point[1]) 
 						current_point[1] = start_point[1]
 						running = False
+					
+					dist += np.abs(current_point[1] - last_y)
 					
 					# Add to lists
 					point_list.append((current_point[0], current_point[1]))
 					width_list.append(self.calc_taper_width(dist))
 				else:
+					
+					last_y = current_point[1]
+					
 					# Update position
 					current_point[1] += self.io['taper']['segment_length_um']
-					dist += self.io['taper']['segment_length_um']
 					
 					# Check for end
 					if current_point[1] >= start_point[1]:
+						# dist += np.abs(start_point[1] - current_point[1])
 						current_point[1] = start_point[1]
 						running = False
+					
+					dist += np.abs(current_point[1] - last_y)
 					
 					# Add to lists
 					point_list.append((current_point[0], current_point[1]))
