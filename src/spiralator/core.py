@@ -323,6 +323,8 @@ class ChipDesign:
 		self.io = {} # Rules for building IO components
 		self.reticle_fiducial = {}
 		
+		self.total_line_length = 0
+		self.total_number_steps = 0
 		
 		# For the time being...
 		warning("Replace this section of code!!!!")
@@ -597,9 +599,7 @@ class ChipDesign:
 			# Otherwise add delta
 			spiral_length += np.sqrt((pt[0] - last_point[0])**2 + (pt[1] - last_point[1])**2)
 			last_point = pt
-		
-		info(f"Total spiral length: >{spiral_length} um<.")
-		
+				
 		# Create FlexPath object for pattern
 		self.path = gdstk.FlexPath(path_list, self.tlin['Wcenter_um'], tolerance=1e-2, layer=self.layers["NbTiN"])
 		
@@ -1157,6 +1157,7 @@ class ChipDesign:
 			last_point = pt
 		
 		info(f"Total spiral length: >{spiral_length} um<.")
+		self.total_line_length += spiral_length
 		
 		# Create FlexPath object for pattern
 		
@@ -1293,7 +1294,7 @@ class ChipDesign:
 		
 		
 			info(f"Added {num_ZL_sections} low impedance steps.")
-		
+			self.total_number_steps += num_ZL_sections
 		#
 		##================ END MAKE STEPPED IMPEDANCE STRUCTURES
 		
@@ -1617,6 +1618,8 @@ class ChipDesign:
 				info(f"Number of steps on upper half of through: {num_steps}")
 				info(f"Upper half of through, length: {dist} um")
 				
+				self.total_number_steps += num_steps
+				# self.total_line_length += dist
 			else:
 				
 				pad_end_y = self.pad_height-baseline_offset+self.through_leads_um
@@ -1666,6 +1669,9 @@ class ChipDesign:
 				
 				info(f"Number of steps on lower half of through: {num_steps}")
 				info(f"Lower half of through, length: {dist} um")
+				
+				self.total_number_steps += num_steps
+				# self.total_line_length += dist
 		else: # Build taper
 			
 			# Get current point on line - initialize w/ end of bond pad
@@ -1766,6 +1772,7 @@ class ChipDesign:
 		
 		taper_length = self.io['taper']['length_um']
 		info(f"Total meandered line length: >{rd(dist)}< um, Taper length: >{rd(taper_length)}<.")
+		self.total_line_length += dist
 		
 		if dist < taper_length:
 			warning("Meandered line length is less than taper length! Sharp edge present.")
@@ -2081,6 +2088,7 @@ class ChipDesign:
 		
 		taper_length = self.io['taper']['length_um']
 		info(f"Total meandered line length: >{rd(dist)}< um, Taper length: >{rd(taper_length)}<.")
+		self.total_line_length += dist
 		
 		if dist < taper_length:
 			warning("Meandered line length is less than taper length! Sharp edge present.")
