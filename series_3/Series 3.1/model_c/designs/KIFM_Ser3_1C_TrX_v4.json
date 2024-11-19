@@ -52,7 +52,7 @@
 			"y_line_offset_um": 250
 		},
 		"faux_cpw_taper":{
-			"cpw_widths_um": [3.3],
+			"cpw_widths_um": [60],
 			"cpw_gaps_um": [6],
 			"cpw_section_lengths_um": [350]
 		},
