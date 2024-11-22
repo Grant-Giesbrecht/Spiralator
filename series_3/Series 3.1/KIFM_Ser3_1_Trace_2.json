@@ -6,7 +6,7 @@
 	"spiral": {
 		"num_rotations": 30,
 		"spacing_um": 50,
-		"num_points": 2000,
+		"num_points": 10000,
 		"tail_length_um": 10,
 		"horiz_stretch_um": 0,
 		"vert_stretch_um": 3400

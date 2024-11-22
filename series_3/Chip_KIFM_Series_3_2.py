@@ -44,7 +44,7 @@ def create_chip(tlin_width:float, model_str:str, repo_path, design_path, conf_X)
 	# chip_d3.insert_text((justify_line, baseline), f"WIDTH = {tlin_width} um", selected_font, text_size)
 
 	chip_d3.insert_text((-1200, -4800+line_gap+text_size), "NO STEPS", selected_font, text_size, center_justify=True)
-	chip_d3.insert_text((-1200, -4800), f"L = 1119.71 mm", selected_font, text_size, center_justify=True)
+	chip_d3.insert_text((-1200, -4800), f"L = {rd(chip_d3.total_line_length/1e3, 2)} mm", selected_font, text_size, center_justify=True)
 
 	chip_d3.insert_graphic((1520, -4800), os.path.join(repo_path, "assets", "graphics", "CU.gds"), 350)
 	chip_d3.insert_graphic((1200, -4400), os.path.join(repo_path, "assets", "graphics", "NIST.gds"), 1000, read_layer=10)
