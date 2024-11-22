@@ -4,7 +4,7 @@
 	"chip_edge_buffer_um": 275,
 	"spiral_io_buffer_um": 285,
 	"spiral": {
-		"num_rotations": 75,
+		"num_rotations": 73,
 		"spacing_um": 30,
 		"num_points": 10000,
 		"tail_length_um": 10,

@@ -2,7 +2,7 @@ from spiralator.core import *
 
 ##---------------------------- Setup Scripts ---------------------------------
 
-def create_chip(tlin_width:float, model_str:str, repo_path, design_path, conf_X, conf_2):
+def create_chip(tlin_width:float, model_str:str, repo_path, design_path, conf_X, conf_2, step_H_width, step_L_width, step_H_length, step_L_length,):
 	
 	print("-"*80)
 	print(f"MULTICHIP DESIGN: MODEL-{model_str}")
@@ -61,7 +61,7 @@ def create_chip(tlin_width:float, model_str:str, repo_path, design_path, conf_X,
 	chip_d3 = ChipDesign()
 	# chip_d3.read_conf(os.path.join("~", "Documents", "GitHub", "Spiralator", "series_3", "Series 3.1", "model_c", "designs", "KIFM_Ser3_1C_TrX_v4.json"))
 	chip_d3.read_conf(conf_X)
-	chip_d3.configure_steps(ZL_width_um=4.4, ZH_width_um=2.85, ZL_length_um=16, ZH_length_um=270)
+	chip_d3.configure_steps(ZL_width_um=step_L_width, ZH_width_um=step_H_width, ZL_length_um=step_L_length, ZH_length_um=step_H_length)
 	
 	pd = chip_d3.io['faux_cpw_taper']
 	print(f"D3 (file): {pd}")
@@ -93,7 +93,7 @@ def create_chip(tlin_width:float, model_str:str, repo_path, design_path, conf_X,
 	# chip_d2.read_conf(os.path.join("designs", "KIFM_Ser3_1C_Tr2_v4.json"))
 	chip_d2.read_conf(conf_2)
 	
-	chip_d2.configure_steps(ZL_width_um=4.4, ZH_width_um=2.85, ZL_length_um=16, ZH_length_um=270)
+	chip_d2.configure_steps(ZL_width_um=step_L_width, ZH_width_um=step_H_width, ZL_length_um=step_L_length, ZH_length_um=step_H_length)
 	
 	pd = chip_d2.io['faux_cpw_taper']
 	print(f"D3 (file): {pd}")
@@ -116,7 +116,9 @@ def create_chip(tlin_width:float, model_str:str, repo_path, design_path, conf_X,
 	chip_d2.insert_text((justify_line, baseline+line_gap*3.25+3.25*text_size), f"KINETIC INDUCTANCE", selected_font, text_size, center_justify=True)
 	chip_d2.insert_text((justify_line, baseline+line_gap*2.25+2.25*text_size), f"FREQUENCY CONVERTER", selected_font, text_size, center_justify=True)
 	chip_d2.insert_text((justify_line, baseline+line_gap+text_size), f"SERIES-3.1 Mdl. {model_str}", selected_font, text_size, center_justify=True)
-	chip_d2.insert_text((justify_line, baseline), f"WIDTH = {tlin_width} µm", selected_font, text_size, center_justify=True)
+	chip_d2.insert_text((justify_line, baseline), f"50 Ω WIDTH = {tlin_width} µm", selected_font, text_size, center_justify=True)
+	chip_d2.insert_text((justify_line, baseline-line_gap-text_size), f"WL={step_L_width} µm, WH={step_H_width} µm", selected_font, text_size, center_justify=True)
+	chip_d2.insert_text((justify_line, baseline-line_gap*2-2*text_size), f"dL={step_L_length} µm, dH={step_H_length} µm", selected_font, text_size, center_justify=True)
 	
 	# chip_d3.insert_text((justify_line, baseline+line_gap*3.25+3.25*text_size), f"Kinetic Inductance", selected_font, text_size, center_justify=True)
 	# chip_d3.insert_text((justify_line, baseline+line_gap*2.25+2.25*text_size), f"Frequency Converter", selected_font, text_size, center_justify=True)
@@ -151,6 +153,8 @@ def create_chip(tlin_width:float, model_str:str, repo_path, design_path, conf_X,
 	
 	chip_d2.insert_graphic((920, 4125), os.path.join(repo_path, "assets", "graphics", "CU.gds"), 350)
 	chip_d2.insert_graphic((600, 4525), os.path.join(repo_path, "assets", "graphics", "NIST.gds"), 1000, read_layer=10)
+	
+	chip_d2.insert_graphic((460, 3360), os.path.join(repo_path, "assets", "graphics", "step_labels.gds"), 1000, read_layer=1)
 	
 	#------------------------- Create Master Design ---------------------
 	
@@ -194,7 +198,13 @@ design_paths = [DESIGN_PATH_A, DESIGN_PATH_B, DESIGN_PATH_C, DESIGN_PATH_D, DESI
 conf_x = os.path.join(REPO_PATH, "series_3", "Series 3.1", "KIFM_Ser3_1_Trace_1_3.json")
 conf_2 = os.path.join(REPO_PATH, "series_3", "Series 3.1", "KIFM_Ser3_1_Trace_2.json")
 
+ZL_widths = [3.7, 4, 4.4, 4.9, 5.4]
+ZH_widths = [2.4, 2.6, 2.85, 3.2, 3.6]
+
+
 # Create each
+index = -1
 for model,w,dp in zip(model_names, widths, design_paths):
+	index += 1
 	
-	create_chip(w, model, REPO_PATH, dp, conf_x, conf_2)
+	create_chip(w, model, REPO_PATH, dp, conf_x, conf_2, step_H_width=ZH_widths[index], step_L_width=ZL_widths[index], step_H_length=270, step_L_length=16)
