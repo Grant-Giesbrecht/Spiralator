@@ -23,3 +23,9 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/Grant-Giesbrecht/spiralator"
 Issues = "https://github.com/Grant-Giesbrecht/spiralator/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

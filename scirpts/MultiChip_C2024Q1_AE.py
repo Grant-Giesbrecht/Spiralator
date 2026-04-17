@@ -1,4 +1,4 @@
-from core import *
+from spiralator.core import *
 
 ##---------------------------- Setup Scripts ---------------------------------
 
